@@ -1,0 +1,16 @@
+{
+  "scope": "A",
+  "version": 1,
+  "restricted": false,
+  "overridable": true,
+  "files": [
+    "data.bin"
+  ],
+  "attributes": {
+    "lastModification": {
+      "actor": "pwalker",
+      "timestamp": "2019-07-11T14:44:23Z"
+    },
+    "lastModificationSignature": "e8a78e61999a93bf30c66e1e6ea6d5a150100de7cbc94f03c532d5c4c9effea7"
+  }
+}
