@@ -2,7 +2,7 @@
 This is an implementation of Version 2 of the Open API Specification Standard (aka Swagger) using only Ignition WebDev and Scripting resources.
 
 ## Status
-This is a work in progress. It is currently in a **Proof of Concept** state.
+This is a work in progress. It is currently in a **early Alpha** state.
 
 ## Remaining Work To Do
 - [ ] Fully implement mock `Pet Store` endpoints.
