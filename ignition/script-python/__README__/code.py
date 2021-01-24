@@ -1,20 +1,59 @@
-#This script module is simply for reference to someone using this project.
-"""
+'''
 
-# Assumptions:
- * Root WebDev resource maps to a Script Package, which contains all of the possible endpoints
- * WebDev resource will always be just the first part of URI (the "base")
- ** Affects how magic finds script resources
- * No WebDev resource folders
- * Path Params are assumed required
- ** cannot guarantee processing of "extra" path params
- * Hyphens '-' are allowed in path to "HTTP resource", and should be used instead of underscores '_'
- * no file extensions in name of script resource
- ** logic should read `wdr.swag['file-extension']` to determine what to do
- * No top-level Script Resources named after HTTP Methods
- ** processing looks for "classes" with a name like an HTTP method, which assumes it will find a Script resource
- * allows 'x-http-method-override'
- ** If a request comes in with the header set, the "override" will be searched for
+HELLO! Welcome to your API Service, hosted on an Ignition Gateway.
+
+This project allows you to design API Endpoints that adhere to the OpenApi 2.0 Specification (aka Swagger).
+API Endpoints created in this project can take advantage of automatic variable typing and validation, central
+security checkpoints for multiple endpoints, automatic logging, version control within the Ignition ecosystem,
+and anything else you could imagine.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+There are a few assumptions being made in th project that you will need to aware of.
+
+	1.	All Endpoints are Script Resources. We are essentially hijacking the Script Resource area as our central
+		repository of all API endpoint magic and structure.
+		This is because we can use type-testing to determine when we have found an Endpoint.
+	2.	In the WebDev section of the project, you will find a WebDev Resource that contains the following code
+		for all possible HTTP Methods.
+			```
+			return __swagger2__.requests.processRequest(request, session)
+			```
+		This WedDev Resource MUST exist at the root level, and absolutely MUST map to a top-level Script Package
+		Resource in the Project's Package Library.
+		In this example project, you will notice how there exists a `v1` WebDev Resource and a `v1` Script Package
+	3.	The WebDev Resource will be part of the "base" of the URL of every API Endpoint.
+		In this example project, this means that every URL will be structured like so...
+			http://mygateway:8088/system/webdev/IgnitionSwagger/v1/____
+	4.	Multiple WebDev Resources are allowed, as long as the appropriate Script Package Resource is created.
+		This means that you could create a `v2` WebDev Resource that maps to a `v2` Script Package containing
+		a completely new generation of API Endpoints.
+	5.	When creating new Endpoints, you will be creating new Script Package Resources underneath the "root" Package.
+		Each Package can contain yet more packages. What defines an Endpoint is the existance of a Script Resource
+		named `__logic__`. The naming of this resource is dictated by Global Variables in the `__swagger2__.statics`
+		Script Resource.
+	6.	Hyphens '-' are absolutely allowed in Script Package names, and should be used instead of underscores '_'.
+	7.	Path Parameters are defined by created a specifically name Script Package Resource. The format is as follows:
+			`[CUSTOM_PREFIX]-[SWAGGER_PRIMITIVE_TYPE]-[VARIABLE_NAME]`
+		An example of an Integer Path parameter, using the default Custom Prefix, would be as follows
+			`is-x-integer-myCustomPathParam`
+		The Custom Prefix is defined in the `__swagger2__.statics` Script Resource's variable `IGNITION_SWAGGER_CUSTOM_PREFIX`.
+	8.	The Endpoint's Script Package Resource should NOT contain any file extensions.
+		Instead, the Script Package's `__logic__` Resource should be written such that it reads the file extension given
+		and constructs its response accordingly.
+	9.	Do not name any Script Package Resources or Script Resources after HTTP Methods. This will conflict with how
+		the Swagger Magic determines when it has found an API Endpoint.
+	10.	This implementation of Swagger allows for requests to set the `X-HTTP-Method-Override` Header.
+		For example, if a request is sent using the POST method, but defines the `X-HTTP-Method-Override` Header
+		as PURGE, then the Swagger Magic will look for an implementation of the PURGE method.
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Please follow the guidance below when creating a new API Endpoint
+
+## 1. Create Script Package Resources for Path.
+...
 
 
 # Creating a new Endpoint:
@@ -34,6 +73,8 @@
  * Can set Swagger's keys `parameters` and `reponses` to `None` if there is not validation necessary
  * Set headers in response requires interfacing with the original Java Servlet Response
  ** wdr.request['servletResponse'].setHeader(STRING, STRING)
+ * no file extensions in name of script resource
+ ** logic should read `wdr.swag['file-extension']` to determine what to do
 
 
 ## Script Resources Needed:
@@ -47,10 +88,14 @@
 ...
 
 
+'''
 
 
 
-"""
+
+
+
+
 
 
 from __swagger2__ import requests as swagRq
