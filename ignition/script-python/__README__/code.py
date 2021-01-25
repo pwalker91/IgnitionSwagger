@@ -9,7 +9,7 @@ and anything else you could imagine.
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-There are a few assumptions being made in th project that you will need to aware of.
+There are a few assumptions being made in this project that you will need to aware of.
 
 	1.	All Endpoints are Script Resources. We are essentially hijacking the Script Resource area as our central
 		repository of all API endpoint magic and structure.
@@ -41,6 +41,7 @@ There are a few assumptions being made in th project that you will need to aware
 	8.	The Endpoint's Script Package Resource should NOT contain any file extensions.
 		Instead, the Script Package's `__logic__` Resource should be written such that it reads the file extension given
 		and constructs its response accordingly.
+		The logic should make use of `wdr.swag['file-extension']` to determine the requested response file type.
 	9.	Do not name any Script Package Resources or Script Resources after HTTP Methods. This will conflict with how
 		the Swagger Magic determines when it has found an API Endpoint.
 	10.	This implementation of Swagger allows for requests to set the `X-HTTP-Method-Override` Header.
@@ -48,54 +49,149 @@ There are a few assumptions being made in th project that you will need to aware
 		as PURGE, then the Swagger Magic will look for an implementation of the PURGE method.
 
 
+
+
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Please follow the guidance below when creating a new API Endpoint
+Please follow the guidance below when creating a new API Endpoint.
+
 
 ## 1. Create Script Package Resources for Path.
+The path to an Endpoint's logic is determined by a series of Script Package resources. For example, if you were
+creating an endpoint for the path `/v1/my/endpoint/thing`, there would exist the following Script Packages:
+	-> v1
+		|--my
+			|--endpoint
+				|--thing
+					|--__logic__
+Underneath the `thing` Script Package, the `__logic__` Script Resource would exist, which will contain all of the
+logic that actually does something of value.
+
+#### Path Params
+When creating an endpoint that needs validated URL Path Parameters, you will need to define Script Package
+Resources that specify what URL Path Params are required. These Script Packages must adhere to the following pattern:
+	`[CUSTOM_PREFIX]-[SWAGGER_DATA_TYPE]-[VARIABLE_NAME]
+Within the `__swagger2__.statics` Script Resource, you will find the variable `IGNITION_SWAGGER_CUSTOM_PREFIX`. This
+variable defines the first part of the Script Package's name.
+The Swagger Data Type must be one of the following basic data types:
+	- string
+	- integer
+The final part will be the variable's name.
+For example, if you required a Path Parameter of type `integer` with the variable name `myIntVar` using the default
+custom prefix, the Script Package Resource would be defined with following name:
+	`is-x-integer-myIntVar`
+Accessing the variable within the Endpoint's logic would be done with the following line:
+	`v = wdr['pathParams']['myIntVar']
+
+
+
+## 2. Create Script Resource
+An Endpoint within this system must contain a Script Resource with the name '__logic__'. This Script Resource
+must be named EXACTLY as the string defined in `__swagger2__.statics.ENDPOINT_LOGIC_RESOURCE_NAME`, which, by default,
+is named '__logic__'.
+
+
+
+## 3. Define HTTP Method Class(es)
+The '__logic__' resource will need to define a basic Python Class that inherits the __swagger2__.requests.HttpMethod class.
+At the top of the Script Resource, define the following imports
+	```
+	import __swagger2__.requests
+	import __swagger2__.responses
+	import __swagger2__.statics
+	```
+The Python class must be in all caps, and named after a valid HTTP Method. The HTTP Method can be of any name.
+However, be aware of the limited HTTP Methods that are natively supported by Ignition's WebDev Module.
+
+#### Default Supported Ignition HTTP Methods
+When creating a WebDev Resource, you will notice that only the following HTTP Methods are supported.
+	- GET
+	- POST
+	- PUT
+	- DELETE
+	- HEAD
+	- OPTIONS
+	- TRACE
+	- PATCH
+Your Endpoints can support any and every HTTP Method, given that the incoming request specifies a value in
+the `X-HTTP-Method-Override` Header. For example, if a POST request with the `X-HTTP-Method-Override` header has
+the value 'COPY' specified, then the Swagger Magic will attempt to find a Class with the name 'COPY' instead of 'POST'.
+
+
+## 4. Define logic and Swagger in HTTP Method Class(es)
+Each HTTP Method Class will need to define the following:
+	- A class variable with the name `SWAGGER`
+		This variable will map to a Dictionary that will be structured as a Swagger Endpoint Definition.
+		You will be defining a Dictionary with the structure defined in the Swagger Specification.
+			https://swagger.io/specification/v2/
+	- A static method `__do__`
+		This method must have the decorator @staticmethod and the name dictated by the value in
+		the variable `__swagger2__.statics.ENDPOINT_LOGIC_FUNCTION`.
+		By default, the value is '__do__'.
+		This function MUST accept the parameters `wdr` and `LOGGER`.
+		The variable `wdr` is a WebDevRequest Object, and `LOGGER` is a Logger Object.
+	Further below you will find an example endpoint.
+	The name of the Endpoint Definition and function can both be changed in `__swagger2__.statics`. Take note of
+	the `ENDPOINT_LOGIC_FUNCTION` and `ENDPOINT_SWAGGER_VARIABLE` variables.
+
+#### Logger Messages
+The Swagger Magic will create a Logger Object based on the Endpoint's path, and will be given to the Endpoint's
+`__do__` function in the `LOGGER` parameter.
+This Logger can be found in the Gateway with the name "IgnitionSwagger2.requests.Endpoint.[METHOD]__[path]". The slashes
+in the Endpoint's path will be replaced with underscores.
+For example, a GET Request sent to the Endpoint '/v1/my/endpoint/44', where '44' is a value for an integer Path Parameter
+with the name `paramName` will have the following Gateway Logger.
+	`IgnitionSwagger2.requests.Endpoint.GET__v1_my_endpoint_is-x-integer-paramName`
+
+#### Authentication
+Within the `SWAGGER` variable, the dictionary must define the variable `is-x-auth` (given that `is-x-` is the
+defined Custom Prefix), which must map to a List of Dictionaries.
+The Dictionaries must define a function as the value for the key 'method'.
+the fuctiona must accept a WebDevRequest object as it's parameter.
+More parameters can be required. The values for these parameters must be defined in the Dictionary's 'extraArgs'
+parameter, which must be dictionary of extra keyword arguments.
+
+For example, the `apiAuth.allowAll` Function accepts the single parameter `wdr` and simply return the necessary
+response that will allow any request to access the Endpoint. The 'auth' Dictionary would be defined as such:
+	```
+	'is-x-auth': [
+		{'method': apiAuth.simple.allowAll,},
+	],
+	```
+However, if you wish to use other parameters, you might consider the `apiAuth.allowWithApiKeyHeader`. The 'auth'
+Dictionary would then be defined as such
+	```
+	'is-x-auth': [
+		{
+			'method': apiAuth.simple.allowWithApiKeyHeader,
+			'extraArgs': {
+				'headerName': 'IS-API-KEY',
+				'keyValue': 'abcd1234',
+			},
+		},
+	],
+	```
+
+#### Endpoint that doesn't reqire Validation
+If the Endpoint you are creating does not require and validation of the request, do the following:
+	- Either do not define the "parameters" key in the `SWAGGER` Dictionary, or define it as an empty List
+	- Set the "is-x-validateRequest" key in the `SWAGGER` Dictionary to False
+If the Endpoint you are creating does not require and validation of the response, do the following:
+	- Either do not define the "responses" key in the `SWAGGER` Dictionary, or define it as an empty Dictionary
+	- Set the "is-x-validateResponse" key in the `SWAGGER` Dictionary to False
+
+#### Setting a Header in the Response
 ...
+ Set headers in response requires interfacing with the original Java Servlet Response
+wdr.request['servletResponse'].setHeader(STRING, STRING)
 
-
-# Creating a new Endpoint:
- * Create a series of Script Packages with the name you wish to use
- ** Define "Path Params" following the required format
- ** If Package is an endpoint, define Script resource inside named '__logic__'
- ** Script should define a class named as the HTTP method (all caps), which itself contains a function
- ** @staticmethod
-    def __do__(wdr, LOGGER):
- ** REFERENCE: _swagger2_.statics for name of prefix, script resource, and function name
- * Logger shows up as "Endpoint.[METHOD]__[path]" (with '/' in path replaced by '_')
- * Define Swagger (refer to https://swagger.io/specification/v2/) in HTTP Method class
-   as a dictionary. Variable should be named 'SWAGGER' (reference statics)
- ** Swagger MUST define some auth to use. If endpoint is to be publicly available, use a function that
-    always returns a "true".
- * Use __swagger2__.responses to build a "response" (ie. JSON or HTTP Status Code)
- * Can set Swagger's keys `parameters` and `reponses` to `None` if there is not validation necessary
- * Set headers in response requires interfacing with the original Java Servlet Response
- ** wdr.request['servletResponse'].setHeader(STRING, STRING)
- * no file extensions in name of script resource
- ** logic should read `wdr.swag['file-extension']` to determine what to do
-
-
-## Script Resources Needed:
- * packages only
- * "__logic__"
- * "[PREFIX]-[DATA_TYPE]-[URI_PARAM_NAME]"
-
-
-
-# Basic and Custom Swagger Keys:
+#### Generic Responses
 ...
+swagStc.GENERIC_SUCCESS_RESPONSE
+swagStc.GENERIC_FAILURE_RESPONSE
 
 
 '''
-
-
-
-
-
-
-
 
 
 from __swagger2__ import requests as swagRq
@@ -335,6 +431,35 @@ class HTTP_METHOD_NAME: #eg. GET, POST, DELETE, PATH, OPTIONS
 				 - 'response' - Any type of plain text response.
 				 - 'contentType' - The mime type. Need only if ambiguous.
 		'''
+		#To access URL Parameters, use the following structure
+		var = wdr['pathParams']['myPathParamName']
+		#To access a URL Query Parameter, use the following structure
+		var = wdr['params']['urlQueryParamName']
+		#To access a Body Parameter, use the following structure
+		var = wdr['data']['bodyObject']['objectVar']
+		
+		#The return of the functions should be a return that the WebDev Module can use.
 		return {'response': '42 is the answer'}
+		#There are helper functions that can return a response that follows a specific, standard structure.
+		#The JSON response will have the keys 'success' and 'status', which will map to a Boolean and String respectively.
+		#Any data provided as a dictionary to the `data` parameter will be merged with the final dictionary.
+		#In the example below, there will exist the following keys in the JSON response:
+		#	- "success"
+		#	- "status"
+		#	- "swag"
+		return __swagger2__.responses.json(success=True, status='SUCCESS', data={'swag': wdr.swag})
+		 #This will return a response with the HTTP status code 404. The response will have the text '404 Not Found'
+		return __swagger2__.responses.httpStatus(wdr.request, 404)
+		 #This will return a response with the HTTP status code 500, given that the second parameter was the string 'Internal Server Error'
+		return __swagger2__.responses.httpStatus(wdr.request, 'Internal Server Error')
 	#END DEF
 #END CLASS
+
+
+'''
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# Basic and Custom Swagger Keys:
+...
+'''

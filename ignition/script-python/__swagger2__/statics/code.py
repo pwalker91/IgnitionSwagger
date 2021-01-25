@@ -265,7 +265,7 @@ VALID_METHODS = OrderedDict([
 #In Swagger, the "in" field on a parameter definition defines where the data is
 # excepted to be found in `WebDevRequest.swag`
 VALID_SWAGGER_IN = OrderedDict([
-	('path',	'path-args'),
+	#('path',	'pathParams'),
 	('header',	'headers'),
 	('query',	'params'),
 	('formData', 'data'),
