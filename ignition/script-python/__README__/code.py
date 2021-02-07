@@ -1,4 +1,4 @@
-'''
+"""
 
 HELLO! Welcome to your API Service, hosted on an Ignition Gateway.
 
@@ -30,14 +30,19 @@ There are a few assumptions being made in this project that you will need to awa
 		a completely new generation of API Endpoints.
 	5.	When creating new Endpoints, you will be creating new Script Package Resources underneath the "root" Package.
 		Each Package can contain yet more packages. What defines an Endpoint is the existance of a Script Resource
-		named `__logic__`. The naming of this resource is dictated by Global Variables in the `__swagger2__.statics`
-		Script Resource.
+		named `__logic__`.
+			a.	The naming of this resource is dictated by the Variables in the `statics` Script Resource. This
+				Script Resource will need to exist under the "root" Script Package.
+			b.	Similarly, there are "definitions" that Swagger will expect. This includes information about
+				what HTTP protocols are allowed, security definitions, generic contact info about the API service,
+				and other Swagger stuff.
+				You will need to create a `definitions Script Resource under the "root" Script Package.
 	6.	Hyphens '-' are absolutely allowed in Script Package names, and should be used instead of underscores '_'.
 	7.	Path Parameters are defined by created a specifically name Script Package Resource. The format is as follows:
 			`[CUSTOM_PREFIX]-[SWAGGER_PRIMITIVE_TYPE]-[VARIABLE_NAME]`
 		An example of an Integer Path parameter, using the default Custom Prefix, would be as follows
 			`is-x-integer-myCustomPathParam`
-		The Custom Prefix is defined in the `__swagger2__.statics` Script Resource's variable `IGNITION_SWAGGER_CUSTOM_PREFIX`.
+		The Custom Prefix is defined in the `(root).statics` Script Resource's variable `IGNITION_SWAGGER_CUSTOM_PREFIX`.
 	8.	The Endpoint's Script Package Resource should NOT contain any file extensions.
 		Instead, the Script Package's `__logic__` Resource should be written such that it reads the file extension given
 		and constructs its response accordingly.
@@ -71,7 +76,7 @@ logic that actually does something of value.
 When creating an endpoint that needs validated URL Path Parameters, you will need to define Script Package
 Resources that specify what URL Path Params are required. These Script Packages must adhere to the following pattern:
 	`[CUSTOM_PREFIX]-[SWAGGER_DATA_TYPE]-[VARIABLE_NAME]
-Within the `__swagger2__.statics` Script Resource, you will find the variable `IGNITION_SWAGGER_CUSTOM_PREFIX`. This
+Within the `(root).statics` Script Resource, you will find the variable `IGNITION_SWAGGER_CUSTOM_PREFIX`. This
 variable defines the first part of the Script Package's name.
 The Swagger Data Type must be one of the following basic data types:
 	- string
@@ -87,7 +92,7 @@ Accessing the variable within the Endpoint's logic would be done with the follow
 
 ## 2. Create Script Resource
 An Endpoint within this system must contain a Script Resource with the name '__logic__'. This Script Resource
-must be named EXACTLY as the string defined in `__swagger2__.statics.ENDPOINT_LOGIC_RESOURCE_NAME`, which, by default,
+must be named EXACTLY as the string defined in `(root).statics.ENDPOINT_LOGIC_RESOURCE_NAME`, which, by default,
 is named '__logic__'.
 
 
@@ -98,7 +103,8 @@ At the top of the Script Resource, define the following imports
 	```
 	import __swagger2__.requests
 	import __swagger2__.responses
-	import __swagger2__.statics
+	import __swagger2__.globals
+	import (root).statics
 	```
 The Python class must be in all caps, and named after a valid HTTP Method. The HTTP Method can be of any name.
 However, be aware of the limited HTTP Methods that are natively supported by Ignition's WebDev Module.
@@ -126,12 +132,12 @@ Each HTTP Method Class will need to define the following:
 			https://swagger.io/specification/v2/
 	- A static method `__do__`
 		This method must have the decorator @staticmethod and the name dictated by the value in
-		the variable `__swagger2__.statics.ENDPOINT_LOGIC_FUNCTION`.
+		the variable `(root)statics.ENDPOINT_LOGIC_FUNCTION`.
 		By default, the value is '__do__'.
 		This function MUST accept the parameters `wdr` and `LOGGER`.
 		The variable `wdr` is a WebDevRequest Object, and `LOGGER` is a Logger Object.
 	Further below you will find an example endpoint.
-	The name of the Endpoint Definition and function can both be changed in `__swagger2__.statics`. Take note of
+	The name of the Endpoint Definition and function can both be changed in `(root).statics`. Take note of
 	the `ENDPOINT_LOGIC_FUNCTION` and `ENDPOINT_SWAGGER_VARIABLE` variables.
 
 #### Logger Messages
@@ -191,12 +197,18 @@ swagStc.GENERIC_SUCCESS_RESPONSE
 swagStc.GENERIC_FAILURE_RESPONSE
 
 
-'''
 
+
+
+
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+## Example Content for `__logic__` resource
 
 from __swagger2__ import requests as swagRq
 from __swagger2__ import responses as swagRsp
-from __swagger2__ import statics as swagStc
+from (root) import statics as swagStc
 PREFIX = swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX
 
 
@@ -450,16 +462,18 @@ class HTTP_METHOD_NAME: #eg. GET, POST, DELETE, PATH, OPTIONS
 		return __swagger2__.responses.json(success=True, status='SUCCESS', data={'swag': wdr.swag})
 		 #This will return a response with the HTTP status code 404. The response will have the text '404 Not Found'
 		return __swagger2__.responses.httpStatus(wdr.request, 404)
-		 #This will return a response with the HTTP status code 500, given that the second parameter was the string 'Internal Server Error'
+		 #This will return a response with the HTTP status code 500, given that the second parameter was the
+		 # string 'Internal Server Error'
 		return __swagger2__.responses.httpStatus(wdr.request, 'Internal Server Error')
 	#END DEF
 #END CLASS
 
 
-'''
+
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # Basic and Custom Swagger Keys:
 ...
-'''
+
+"""
