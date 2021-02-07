@@ -29,6 +29,75 @@ LIBRARY_LOGGER = server.getLogger("IgnitionSwagger2.globals")
 # CLASSES and STATIC VARIABLES
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+def getUriBase(request):
+	'''
+	@FUNC	Given a WebDev Request object, we are going to determine the "URI Base". This string can be used
+			to filter out the fluff at the beginning of a Request's Path.
+	@PARAM	request : A WebDev Request object
+	@RETURN	String, the appropriate base of the request's path
+	@RAISES	ValueError, if the Project Name was not present in the Request URI (which it always should be)
+	'''
+	logger = LIBRARY_LOGGER.getSubLogger('getUriBase')
+	requestPath = request['servletRequest'].getRequestURI()
+	projName = system.project.getProjectName()
+	logger.trace(
+		"Determined request path to be '{!s}'. The Ignition Project's name is '{!s}'".format(
+			requestPath, projName
+		)
+	)
+	#This line will throw an exception if the Project Name is not found
+	projNameIndex = requestPath.index(projName)
+	basePath = requestPath[:(projNameIndex+len(projName))]
+	logger.debug("Determined URI Base to be '{!s}'".format(basePath))
+	return basePath
+#END DEF
+
+def getRootPackage(request):
+	'''
+	@FUNC	Given the WebDev Request object, we will determine the "root" Script Package for the Swagger-based API Service
+	@PARAM	request : WebDev Request object
+	@RETURN	Script Package reference
+	@RAISES	Exception, when the WebDev Request does not match to a Script Package
+	'''
+	logger = LIBRARY_LOGGER.getSubLogger('getRootPackage')
+	#Using the incoming request, we are going to determine the "root" Script Package
+	uriBase = getUriBase(request)
+	fullRequestPath = request['servletRequest'].getRequestURI()
+	logger.trace(
+		"Processing a request to '{!s}'. URI Base was determined to be '{!s}'".format(
+			fullRequestPath, uriBase
+		)
+	)
+	cleanRequestPath = fullRequestPath.replace(uriBase+'/','')
+	logger.trace(
+		"Path with Base removed = '{!s}'. Remaining Path = '{!s}'".format(
+			cleanRequestPath, request['remainingPath']
+		)
+	)
+	webdevResourceName = cleanRequestPath.replace(request['remainingPath'],'')
+	logger.trace("The actual WebDev Resource should be named '{!s}'".format(webdevResourceName))
+	if webdevResourceName not in sys.modules:
+		raise Exception("Unable to find matching Script Package with name '{!s}'".format(webdevResourceName))
+	return sys.modules[webdevResourceName]
+#END DEF
+
+def getNamedModuleFromRoot(rootPackage, moduleName):
+	'''
+	@FUNC	Finds the given Module in the Root Package
+	@PARAM	rootPackage : Script Package reference
+	@PARAM	moduleName : String, the name of the Script Module to find in the Root Package
+	@RETURN	Script Module reference
+	@RAISES	Exception, when the Script Package does not contain the appropriate Script Module resource
+	'''
+	logger = LIBRARY_LOGGER.getSubLogger('getNamedModuleFromRoot')
+	logger.trace("Testing if given Root Package contains '{!s}'".format(moduleName))
+	if moduleName not in rootPackage.__dict__:
+		raise Exception("The Root Package must contain a module named '{!s}'".format(moduleName))
+	return rootPackage.__dict__.get(moduleName, None)
+#END DEF
+
+
+
 class dataParsers:
 	'''
 	@CLASS	This class is where we define sub-classes that provide some format validation of incoming request data
