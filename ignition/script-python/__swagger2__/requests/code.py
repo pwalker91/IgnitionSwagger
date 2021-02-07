@@ -26,8 +26,7 @@ from com.inductiveautomation.ignition.common.script import ScriptPackage
 #Other Ignition Project Script Modules that we will use
 import server
 from __swagger2__ import responses as swagRsp
-from __swagger2__ import definitions as swagDf
-from __swagger2__ import statics as swagStc
+from __swagger2__ import globals as swagGl
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -236,6 +235,39 @@ class WebDevRequest(object):
 		return
 	#END DEF
 	
+	def augmentRequestHTTPMethod(self, forceReCalcAug=False):
+		'''
+		@FUNC	Extracts more detailed "HTTP Method" data, based off what is given in the WebDev Request.
+		@PARAM	forceReCalcAug : Boolean. If the augmentation has already be calculated, passing a True
+					will tell the function to ignore that and recalc.
+		@ADDS	['original-http-method']
+				['http-method']
+		@RETURN	N/A
+		'''
+		mykey = 'httpmethod'
+		self.__validate_augment_request_dependencies(mykey)
+		if self.requestAugmentations[mykey] and not forceReCalcAug:
+			raise CustomExceptions.WebDevRequestException(
+				"You cannot trigger the augmentation of the request {!s} multiple times.".format(mykey)
+			)
+		else:
+			self.requestAugmentations[mykey] = False
+			originalMethod = self.request['servletRequest'].getMethod().upper()
+			self.swag['original-http-method'] = originalMethod
+			self.swag['http-method'] = (
+					self.swag['headers-lc']['x-http-method-override'].upper()
+					if 'x-http-method-override' in self.swag['headers-lc'] and originalMethod == 'POST'
+					else originalMethod
+				)
+			if self.swag['http-method'] not in swagGl.VALID_METHODS.keys():
+				raise CustomExceptions.InvalidHTTPMethodException(
+					"Method '{!s}' is not valid.".format(self.swag['http-method'])
+				)
+			self.requestAugmentations[mykey] = True
+		#END IF/ELSE
+		return
+	#END DEF
+	
 	def augmentRequestURI(self, uriBase="", forceReCalcAug=False):
 		'''
 		@FUNC	Extracts more detailed "URI" data, based off what is given in the WebDev Request.
@@ -275,39 +307,6 @@ class WebDevRequest(object):
 		return
 	#END DEF
 	
-	def augmentRequestHTTPMethod(self, forceReCalcAug=False):
-		'''
-		@FUNC	Extracts more detailed "HTTP Method" data, based off what is given in the WebDev Request.
-		@PARAM	forceReCalcAug : Boolean. If the augmentation has already be calculated, passing a True
-					will tell the function to ignore that and recalc.
-		@ADDS	['original-http-method']
-				['http-method']
-		@RETURN	N/A
-		'''
-		mykey = 'httpmethod'
-		self.__validate_augment_request_dependencies(mykey)
-		if self.requestAugmentations[mykey] and not forceReCalcAug:
-			raise CustomExceptions.WebDevRequestException(
-				"You cannot trigger the augmentation of the request {!s} multiple times.".format(mykey)
-			)
-		else:
-			self.requestAugmentations[mykey] = False
-			originalMethod = self.request['servletRequest'].getMethod().upper()
-			self.swag['original-http-method'] = originalMethod
-			self.swag['http-method'] = (
-					self.swag['headers-lc']['x-http-method-override'].upper()
-					if 'x-http-method-override' in self.swag['headers-lc'] and originalMethod == 'POST'
-					else originalMethod
-				)
-			if self.swag['http-method'] not in swagStc.VALID_METHODS.keys():
-				raise CustomExceptions.InvalidHTTPMethodException(
-					"Method '{!s}' is not valid.".format(self.swag['http-method'])
-				)
-			self.requestAugmentations[mykey] = True
-		#END IF/ELSE
-		return
-	#END DEF
-	
 	def augmentRequestBody(self, contentType, forceReCalcAug=False):
 		'''
 		@FUNC	Extracts more detailed "Body" data, based off what is given in the WebDev Request.
@@ -331,15 +330,15 @@ class WebDevRequest(object):
 			requestContentType = self.swag['headers-lc'].get('content-type','UNKNOWN')
 			#If the given Content Type is not one of the allowed types for the HTTP Method being called, throw
 			# an exception. An HTTP Method that does not have any required Content Types will not be a list.
-			if isinstance(swagStc.VALID_METHODS[requestHTTPMethod], types.ListType):
-				if all([ctype not in requestContentType for ctype in swagStc.VALID_METHODS[requestHTTPMethod]]):
+			if isinstance(swagGl.VALID_METHODS[requestHTTPMethod], types.ListType):
+				if all([ctype not in requestContentType for ctype in swagGl.VALID_METHODS[requestHTTPMethod]]):
 					raise CustomExceptions.InvalidContentTypeException(
 						"Value in 'Content-Type' is not allowed for HTTP Method '{!s}'. ".format(requestHTTPMethod) +
-						"Allowed types are '{!s}'.".format(swagStc.VALID_METHODS[requestHTTPMethod])
+						"Allowed types are '{!s}'.".format(swagGl.VALID_METHODS[requestHTTPMethod])
 					)
 			#END IF
-			if contentType in swagStc.VALID_CONTENT_TYPES:
-				contentTypeParserClass = swagStc.VALID_CONTENT_TYPES[contentType]
+			if contentType in swagGl.VALID_CONTENT_TYPES:
+				contentTypeParserClass = swagGl.VALID_CONTENT_TYPES[contentType]
 				if not contentTypeParserClass.isvalid(self.swag['data']):
 					logger.trace("Parsing Body as '{!s}' for HTTP METHOD '{!s}'".format(contentType, requestHTTPMethod))
 					#Ideally, this simply updates the value of swag['data'], but other
@@ -418,7 +417,7 @@ class HttpDataSignature(dict):
 		return (isinstance(other, HttpDataSignature) and dict.__eq__(self, other))
 #END CLASS
 
-def getDataSignatureFromSwagger(swaggerdef, direction, qualifier):
+def getDataSignatureFromSwagger(swaggerdef, direction, qualifier, swagStc, swagDf):
 	'''
 	@FUNC	Uses a Swagger 2.0 definition to make a HttpDataSignature object for request/response validation.
 			For more info on the structure of the definition, see the Swagger 2.0 specification at
@@ -499,6 +498,9 @@ def getDataSignatureFromSwagger(swaggerdef, direction, qualifier):
 	@PARAM	qualifier : String, the qualifier specific to the direction.
 				* eg. direction='incoming', qualifier='query', 'path', etc.
 				      direction='outoing', qualifier='200', '404', etc.
+	@PARAM	swagStc : Script Module Reference, a ref to the "Swagger Statics" script module for the endpoint.
+				This is needed so that the IGNITION_SWAGGER_CUSTOM_PREFIX value can be referenced
+	@PARAM	swagDf : Script Module Reference, a ref to the "Swagger Definitions" script module for the endpoint.
 	
 	@RETURN	HttpDataSignature Object (a glorified Python Dictionary)
 	'''
@@ -541,7 +543,7 @@ def getDataSignatureFromSwagger(swaggerdef, direction, qualifier):
 			raise CustomExceptions.SwaggerParamPropMissingException("Every Swagger Parameter must have a type.")
 		#Only certain types of data types are allowed for locations of data. For example, we can't accept
 		# an "object" as a "path" parameter.
-		if paramSwag['type'] not in swagStc.VALID_SWAGGER_TYPES[dataLocation]:
+		if paramSwag['type'] not in swagGl.VALID_SWAGGER_TYPES[dataLocation]:
 			raise CustomExceptions.SwaggerParamDefinitionInvalidException(
 				"Parameter of type '{!s}' not allowed as a 'in={!s}' parameter.".format(
 					paramSwag['type'], dataLocation
@@ -565,7 +567,7 @@ def getDataSignatureFromSwagger(swaggerdef, direction, qualifier):
 			nullable = bool(paramSwag.get('x-nullable',True)),
 		)
 		
-		#These properties have a more optional property that those described in swagStc.BASIC_PARAMETER_FIELDS,
+		#These properties have a more optional property that those described in swagGl.BASIC_PARAMETER_FIELDS,
 		# so we will process them outside of the more abstract loop used later.
 		if 'allowEmptyValue' in paramSwag:
 			sig['allowEmptyValue'] = bool(paramSwag['allowEmptyValue'])
@@ -578,7 +580,7 @@ def getDataSignatureFromSwagger(swaggerdef, direction, qualifier):
 		
 		#Some of the fields in a Swagger Parameter can be validated more easily, by simply testing if the fields
 		# are present and of the correct Python type.
-		parameterTypesBasicFields = swagStc.BASIC_PARAMETER_FIELDS.get(paramSwag['type'],{})
+		parameterTypesBasicFields = swagGl.BASIC_PARAMETER_FIELDS.get(paramSwag['type'],{})
 		for basicFieldName in parameterTypesBasicFields:
 			fieldRules = parameterTypesBasicFields[basicFieldName]
 			if fieldRules['required'] and basicFieldName not in paramSwag:
@@ -648,13 +650,13 @@ def getDataSignatureFromSwagger(swaggerdef, direction, qualifier):
 							'collectionFormat', paramSwag['type'], types.StringTypes
 						)
 					)
-				if paramSwag['collectionFormat'] not in swagStc.VALID_SWAGGER_ARRAY_COLLECTION_FORMATS.keys():
+				if paramSwag['collectionFormat'] not in swagGl.VALID_SWAGGER_ARRAY_COLLECTION_FORMATS.keys():
 					raise CustomExceptions.SwaggerParamDefinitionInvalidException(
 						"'{!s}' Swagger Key for parameter of type '{!s}'".format(
 							'collectionFormat', paramSwag['type']
 						)+
 						" must be one of the following values: {!r}".format(
-							swagStc.VALID_SWAGGER_ARRAY_COLLECTION_FORMATS.keys()
+							swagGl.VALID_SWAGGER_ARRAY_COLLECTION_FORMATS.keys()
 						)
 					)
 				sig['collectionFormat'] = paramSwag['collectionFormat']
@@ -678,10 +680,10 @@ def getDataSignatureFromSwagger(swaggerdef, direction, qualifier):
 	# https://swagger.io/docs/specification/2-0/describing-request-body/
 	#
 	if direction == 'incoming':
-		if qualifier not in swagStc.VALID_SWAGGER_IN.keys():
+		if qualifier not in swagGl.VALID_SWAGGER_IN.keys():
 			raise CustomExceptions.Exception(
 				"The incoming response qualifier '{!s}' is not valid. Accepted Values are {!r}.".format(
-					qualifier, swagStc.VALID_SWAGGER_IN.keys()
+					qualifier, swagGl.VALID_SWAGGER_IN.keys()
 				)
 			)
 		if swaggerdef.get('parameters',None) is None or not isinstance(swaggerdef.get('parameters',None), types.ListType):
@@ -963,7 +965,7 @@ class data_validation:
 		logger.trace("For key '{!s}', got data of type {!s}".format(key, type(data[key])))
 		
 		if ('format' in signature[key] and
-			signature[key]['format'] in swagStc.BASIC_PARAMETER_FIELDS['string']['format']['allowedValues']
+			signature[key]['format'] in swagGl.BASIC_PARAMETER_FIELDS['string']['format']['allowedValues']
 		):
 			if signature[key]['format'] == 'byte':
 				data_validation.__validate_string_byte(data, signature, key, **kwargs)
@@ -1038,7 +1040,7 @@ class data_validation:
 		No special signature keys.
 		'''
 		logger = LIBRARY_LOGGER.getSubLogger('validate_string_date')
-		dateFormat = swagStc.VALID_SWAGGER_DATE_FORMATS.get(signature[key]['format'])
+		dateFormat = swagGl.VALID_SWAGGER_DATE_FORMATS.get(signature[key]['format'])
 		#If this data is going back in a response, then we need to make sure that we either have a Date Object
 		# (which we can format into the appropriate format) or a Date String in the appropriate format
 		if kwargs.get('isForResponse',False):
@@ -1291,7 +1293,7 @@ class data_validation:
 			if isinstance(data[key], types.StringTypes) and 'collectionFormat' in signature[key]:
 				logger.trace("We have a String. 'collectionFormat'='{!s}'".format(signature[key]['collectionFormat']))
 				data[key] = data[key].split(
-					swagStc.VALID_SWAGGER_ARRAY_COLLECTION_FORMATS[signature[key]['collectionFormat']]['delimiter']
+					swagGl.VALID_SWAGGER_ARRAY_COLLECTION_FORMATS[signature[key]['collectionFormat']]['delimiter']
 				)
 			else:
 				raise CustomExceptions.HttpDataValidationException(
@@ -1431,7 +1433,7 @@ def validate(data, signature, hasParent=False, doTypeCasting=False, isForRespons
 		
 		#Now we can start the actual tests of data-type-correctness
 		keyFormat = signature[key]["type"].lower()
-		if keyFormat not in swagStc.VALID_SWAGGER_TYPES['body']:
+		if keyFormat not in swagGl.VALID_SWAGGER_TYPES['body']:
 			#This is a `raise` because the issue is with whoever defined Swagger that built the
 			# HttpDataSignature, not with the data being validated
 			raise CustomExceptions.HttpDataValidationException("Invalid data signature format '{!s}'".format(keyFormat))
@@ -1533,8 +1535,7 @@ class HttpMethod(object):
 			the HTTP Method (eg. GET, POST, PATCH, etc.).
 			
 			When inheritting this class, your implementation should define a class variable and a static function
-			matching the values in the static variables, `__swagger2__.statics.ENDPOINT_LOGIC_FUNCTION` and
-			`__swagger2__.statics.ENDPOINT_SWAGGER_VARIABLE`.
+			matching the values in the static variables, `ENDPOINT_LOGIC_FUNCTION` and `ENDPOINT_SWAGGER_VARIABLE`.
 			The logic function should expect two parameters, a WebDevRequest object and a Logger object.
 			
 			When creating the actual endpoint, be sure to create the variable SWAGGER with a Swagger configuration,
@@ -1556,6 +1557,8 @@ class Endpoint(object):
 			 5. Execute the logic found in the `HttpMethod` class
 			 6. Confirm the outgoing data is valid
 	@ATTR	wdr : WebDevRequest Object
+	@ATTR	swagStc : Reference to a Script Module for the "Swagger Statics"
+	@ATTR	swagDf : Reference to a Script Module for the "Swagger Definitions"
 	@ATTR	scriptModule : Reference to a Script Module
 	@ATTR	httpMethodClass : Reference to `HttpMethod` Class found in the given Script Module
 	@ATTR	logger : Gateway Logger object, based on the WebDev Request's URI Path
@@ -1563,18 +1566,22 @@ class Endpoint(object):
 	@ATTR	completedSuccessfully : Boolean
 	'''
 	
-	def __init__(self, wdr, fullScriptPathString, scriptModule, callingLogger = None):
+	def __init__(self, wdr, fullScriptPathString, scriptModule, swagStatics, swagDefinitions, callingLogger = None):
 		'''
 		@FUNC	Initializes the BaseEndpoint object
 		@PARAM	wdr : WebDev Request Dictionary, from the WebDev Resource
 		@PARAM	fullScriptPathString : String, the full path to the Script resource that the given request maps to
 		@PARAM	scriptModule : Reference to a Script Module that should contain some 'HttpMethod' classes
+		@PARAM	swagStatics : Reference to a Script Module for the "Swagger Statics"
+		@PARAM	swagDefinitions : Reference to a Script Module for the "Swagger Definitions"
 		@PARAM	callingLogger : Logger object, where to put a message of the instance of this class being
 					initialized, and with what logger name
 		'''
 		if not isinstance(wdr, WebDevRequest):
 			raise CustomExceptions.EndpointException("Parameter 1 must be a WebDevRequest object.")
 		self.wdr = wdr
+		self.swagStc = swagStatics
+		self.swagDf = swagDefinitions
 		#Validating that the WebDevRequest has performed all of the necessary modifications/cleanup of the
 		# given data in the HTTP Request
 		requiredAugs = ['headers', 'httpmethod', 'uri']
@@ -1616,6 +1623,7 @@ class Endpoint(object):
 		@FUNC	Using the WedDevRequest object given during initialization, this will validate the given `HttpMethod`
 				class that maps to the HTTP Request's Method.
 		@PARAM	httpMethodClass
+		@PARAM	swagStc
 		@RETURN	N/A
 		@RAISES	EndpointInitializationException, if the given ScriptModule is invalid
 		@ADDS	self.__httpMethodClass : Class, the HTTP Method Class (with the correct `SWAGGER` and `logic` properties)
@@ -1633,29 +1641,29 @@ class Endpoint(object):
 			)
 		#END IF
 		if not (
-			hasattr(self.__httpMethodClass, swagStc.ENDPOINT_LOGIC_FUNCTION) and 
-			inspect.isfunction(getattr(self.__httpMethodClass, swagStc.ENDPOINT_LOGIC_FUNCTION, None))
+			hasattr(self.__httpMethodClass, self.swagStc.ENDPOINT_LOGIC_FUNCTION) and 
+			inspect.isfunction(getattr(self.__httpMethodClass, self.swagStc.ENDPOINT_LOGIC_FUNCTION, None))
 		):
 			raise CustomExceptions.EndpointInitializationException(
 				"Given HTTP Method Class does not have the required Function named '{!s}'".format(
-					swagStc.ENDPOINT_LOGIC_FUNCTION
+					self.swagStc.ENDPOINT_LOGIC_FUNCTION
 				)
 			)
 		#END IF
 		if not (
-			hasattr(self.__httpMethodClass, swagStc.ENDPOINT_SWAGGER_VARIABLE) and 
-			isinstance(getattr(self.__httpMethodClass, swagStc.ENDPOINT_SWAGGER_VARIABLE, None), types.DictionaryType)
+			hasattr(self.__httpMethodClass, self.swagStc.ENDPOINT_SWAGGER_VARIABLE) and 
+			isinstance(getattr(self.__httpMethodClass, self.swagStc.ENDPOINT_SWAGGER_VARIABLE, None), types.DictionaryType)
 		):
 			raise CustomExceptions.EndpointInitializationException(
 				"Given HTTP Method Class does not have the required Dictionary named '{!s}'".format(
-					swagStc.ENDPOINT_SWAGGER_VARIABLE
+					self.swagStc.ENDPOINT_SWAGGER_VARIABLE
 				)
 			)
 		#END IF
 		
 		self.logger.trace(
 			"Given reference to a Class has a Function named '{!s}' and Dictionary named '{!s}'".format(
-				swagStc.ENDPOINT_LOGIC_FUNCTION, swagStc.ENDPOINT_SWAGGER_VARIABLE
+				self.swagStc.ENDPOINT_LOGIC_FUNCTION, self.swagStc.ENDPOINT_SWAGGER_VARIABLE
 			)
 		)
 		
@@ -1683,16 +1691,16 @@ class Endpoint(object):
 			# "[CONTENT_TYPE]; [EXTRA_INFO]". So, we split on the semicolon character and get the first element
 			self.__consuming = givenType.split(';')[0].lower()
 			self.logger.trace("The true given content type. '{!s}'".format(self.__consuming))
-			if self.__consuming not in swagStc.VALID_CONTENT_TYPES.keys():
+			if self.__consuming not in swagGl.VALID_CONTENT_TYPES.keys():
 				raise CustomExceptions.EndpointInitializationException(
 					"The Content-Type '{!s}' is not supported.".format(self.__consuming)
 				)
 			#Once we know that a 'Content-Type' was given, we want to make sure that the HTTP Method supports
-			# that Content-Type. We need to check the dictionary `swagStc.VALID_METHODS` for that information.
+			# that Content-Type. We need to check the dictionary `swagGl.VALID_METHODS` for that information.
 			# The keys in the Dictionary are HTTP Methods, and if the key for the HTTP Method in the Dictionary
 			# maps to `None`, then we allow ALL types of content.
-			if (swagStc.VALID_METHODS[ self.wdr.swag['http-method'] ] is not None and
-				self.__consuming not in swagStc.VALID_METHODS[ self.wdr.swag['http-method'] ]
+			if (swagGl.VALID_METHODS[ self.wdr.swag['http-method'] ] is not None and
+				self.__consuming not in swagGl.VALID_METHODS[ self.wdr.swag['http-method'] ]
 			):
 				raise CustomExceptions.EndpointInitializationException(
 					"The Content-Type '{!s}' is not allowed for the HTTP Method {!s}.".format(
@@ -1701,7 +1709,7 @@ class Endpoint(object):
 				)
 			#Each endpoint can also define what specific format the incoming data needs to be in.
 			if (self.__consuming not in 
-				getattr(self.__httpMethodClass, swagStc.ENDPOINT_SWAGGER_VARIABLE, {}).get('consumes',[])
+				getattr(self.__httpMethodClass, self.swagStc.ENDPOINT_SWAGGER_VARIABLE, {}).get('consumes',[])
 			):
 				raise CustomExceptions.EndpointInitializationException(
 					"The Content-Type '{!s}' is not supported by this endpoint.".format(self.__consuming)
@@ -1730,19 +1738,19 @@ class Endpoint(object):
 		@RETURN	Boolean, whether the incoming HTTP Request is authorized.
 		'''
 		#Looping through the provided authentication methods that the endpoint wants to use.
-		if (swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'auth' not in self.__endpointSwaggerDef or
+		if (self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'auth' not in self.__endpointSwaggerDef or
 			not isinstance(
-				self.__endpointSwaggerDef.get(swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'auth',None),
+				self.__endpointSwaggerDef.get(self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'auth',None),
 				types.ListType
 			)
 		):
 			raise CustomExceptions.IgnitionSwaggerPropMissingException(
 				"The HTTP Method Class's Swagger Definition must contain a PyList in the custom 'auth' key."
 			)
-		if (len(self.__endpointSwaggerDef[swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'auth']) == 0 or
+		if (len(self.__endpointSwaggerDef[self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'auth']) == 0 or
 			any([
 				not isinstance(authMethod, types.DictionaryType)
-				for authMethod in self.__endpointSwaggerDef[swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'auth']
+				for authMethod in self.__endpointSwaggerDef[self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'auth']
 			])
 		):
 			raise CustomExceptions.IgnitionSwaggerPropInvalidException(
@@ -1762,7 +1770,7 @@ class Endpoint(object):
 		self.wdr.swag['auth'] = None
 		#We will now loop through all of the specified authentication methods. If any of
 		# the methods succeeds, we can break from the loop and continue on toward executing the logic
-		for authMethod in self.__endpointSwaggerDef[swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'auth']:
+		for authMethod in self.__endpointSwaggerDef[self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'auth']:
 			#Calling the authentication function with all of the parameters
 			if not isinstance(authMethod.get('method',None), types.FunctionType):
 				raise CustomExceptions.IgnitionSwaggerPropInvalidException(
@@ -1822,17 +1830,17 @@ class Endpoint(object):
 				the appropriate date (URL Queries or HTTP Body) through the validation function.
 		@RETURN	Boolean, whether the incoming HTTP Request is valid.
 		'''
-		if not self.__endpointSwaggerDef.get(swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'validateRequest',True):
+		if not self.__endpointSwaggerDef.get(self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'validateRequest',True):
 			self.logger.trace(
 				"No request validation. Will validate response? {!r}".format(
-					self.__endpointSwaggerDef.get(swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'validateResponse',True)
+					self.__endpointSwaggerDef.get(self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'validateResponse',True)
 				)
 			)
 		else:
 			#Validating that any necessary headers were given.
 			sig = self.__dataSignatures['incoming']['header']
 			if len(sig) > 0:
-				dataLocation = swagStc.VALID_SWAGGER_IN['header']
+				dataLocation = swagGl.VALID_SWAGGER_IN['header']
 				data = self.wdr.swag[dataLocation]
 				self.logger.trace("Validating incoming data in \"self.wdr.swag['{!s}']\".".format(dataLocation))
 				_requestValidation = validate(data, sig, doTypeCasting = True, isForResponse = False)
@@ -1877,7 +1885,7 @@ class Endpoint(object):
 			#END IF/ELSE
 			sig = self.__dataSignatures['incoming'][dataInKey]
 			if len(sig) > 0:
-				dataLocation = swagStc.VALID_SWAGGER_IN[dataInKey]
+				dataLocation = swagGl.VALID_SWAGGER_IN[dataInKey]
 				data = self.wdr.swag[dataLocation]
 				self.logger.trace("Validating incoming data in \"self.wdr.swag['{!s}']\".".format(dataLocation))
 				_requestValidation = validate(
@@ -1911,7 +1919,7 @@ class Endpoint(object):
 		#The "logic" function should ALWAYS receive the following parameters:
 		#  - `wdr` : WebDevRequest Object
 		#  - `logger` : Gateway Logger Object
-		self.response = getattr(self.__httpMethodClass, swagStc.ENDPOINT_LOGIC_FUNCTION)(self.wdr, self.logger)
+		self.response = getattr(self.__httpMethodClass, self.swagStc.ENDPOINT_LOGIC_FUNCTION)(self.wdr, self.logger)
 		#Expected return:
 		#  - Python Dictionary, a WebDev response that a WebDev Resource can return. The valid keys are:
 		#	 - 'html' - HTML source as a String.
@@ -1936,7 +1944,7 @@ class Endpoint(object):
 		@RAISES	Exception if JSON response is not in correct format
 		'''
 		if (self.response is not None and
-			self.__endpointSwaggerDef.get(swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'validateResponse',True) and
+			self.__endpointSwaggerDef.get(self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'validateResponse',True) and
 			'json' in self.response
 		):
 			self.logger.trace("Potentially validating the JSON response.")
@@ -1971,7 +1979,7 @@ class Endpoint(object):
 					"No response validation. "+
 					("Response is JSON. " if 'json' in (self.response or {}) else "Response is not JSON. ")+
 					("Special 'validateResponse' key = {!r}".format(
-							self.__endpointSwaggerDef.get(swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'validateResponse',True)
+							self.__endpointSwaggerDef.get(self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'validateResponse',True)
 						)
 					)
 				)
@@ -2006,22 +2014,30 @@ class Endpoint(object):
 		
 		self.__validateHttpMethodClass( self.scriptModule.__dict__[self.wdr.swag['http-method']] )
 		#Saving this for later, for easier reference by later blocks and other functions
-		self.__endpointSwaggerDef = getattr(self.__httpMethodClass, swagStc.ENDPOINT_SWAGGER_VARIABLE)
+		self.__endpointSwaggerDef = getattr(self.__httpMethodClass, self.swagStc.ENDPOINT_SWAGGER_VARIABLE)
 		
 		self.logger.trace("Generating incoming and outgoing data signatures based on found Swagger.")
-		self.logger.trace("Possible incoming data locations to check: {!r}".format(swagStc.VALID_SWAGGER_IN.keys()))
+		self.logger.trace("Possible incoming data locations to check: {!r}".format(swagGl.VALID_SWAGGER_IN.keys()))
 		self.logger.trace(
 			"Possible outgoing signature to check: {!r}".format(self.__endpointSwaggerDef.get('responses',{}).keys())
 		)
 		self.__dataSignatures = {
 			'incoming': {
-				dataLocation : getDataSignatureFromSwagger(self.__endpointSwaggerDef, 'incoming', dataLocation)
+				dataLocation : getDataSignatureFromSwagger(
+						self.__endpointSwaggerDef,
+						'incoming', dataLocation,
+						self.swagStc, self.swagDf
+					)
 					for dataLocation in
-					swagStc.VALID_SWAGGER_IN.keys()
+					swagGl.VALID_SWAGGER_IN.keys()
 
 			},
 			'outgoing': {
-				httpStatusCode : getDataSignatureFromSwagger(self.__endpointSwaggerDef, 'outgoing', httpStatusCode)
+				httpStatusCode : getDataSignatureFromSwagger(
+						self.__endpointSwaggerDef,
+						'outgoing', httpStatusCode,
+						self.swagStc, self.swagDf
+					)
 					for httpStatusCode in
 					self.__endpointSwaggerDef.get('responses',{}).keys()
 			}
@@ -2034,20 +2050,20 @@ class Endpoint(object):
 		# we want to include headers in the response regardless of whether the Authentication validation succeeded or not.
 		#And so, the definer can use a Python Dictionary in the key 'custom prefix'+'includeHeaders' to have some headers
 		# included by default. The keys in the dictionary should map to Strings.
-		if (swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'includeHeaders' in self.__endpointSwaggerDef and
+		if (self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'includeHeaders' in self.__endpointSwaggerDef and
 			isinstance(
-				self.__endpointSwaggerDef.get(swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'includeHeaders',None),
+				self.__endpointSwaggerDef.get(self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'includeHeaders',None),
 				types.DictionaryType
 			)
 		):
 			self.logger.trace(
 				"Including headers: {!r}".format(
-					self.__endpointSwaggerDef[swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'includeHeaders'].keys()
+					self.__endpointSwaggerDef[self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'includeHeaders'].keys()
 				)
 			)
-			for key in self.__endpointSwaggerDef[swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'includeHeaders']:
+			for key in self.__endpointSwaggerDef[self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'includeHeaders']:
 				self.wdr.request['servletResponse'].setHeader(
-					key, str(self.__endpointSwaggerDef[swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'includeHeaders'][key])
+					key, str(self.__endpointSwaggerDef[self.swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX+'includeHeaders'][key])
 				)
 		#END IF
 		
@@ -2068,10 +2084,11 @@ class Endpoint(object):
 
 
 
-def findScriptResourcesFromPath(possiblePath):
+def findScriptResourcesFromPath(possiblePath, swagStc):
 	'''
 	@FUNC	Attempts to use the List of Strings to find a Script Resource
 	@PARAM	possiblePath : List of Strings
+	@PARAM	swagStc : Reference to a Script Module for the "Swagger Statics"
 	@RETURN	List of Dictionaries, containing data about the Script Modules found that matched the path given.
 				Dictionaries will contain the following keys:
 				 - fullName : String
@@ -2154,7 +2171,7 @@ def findScriptResourcesFromPath(possiblePath):
 		
 		#Since part of the URL could be parameters, we need to also check if this package has sub-packages
 		# that are placeholders for Path Parameters.
-		for allowPathParamType in swagStc.VALID_SWAGGER_TYPES['path']:
+		for allowPathParamType in swagGl.VALID_SWAGGER_TYPES['path']:
 			packageNameRegex = '^{}{}\-(.*)'.format(re.escape(swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX), allowPathParamType)
 			logger.trace(
 				"Looking for sub-packages in '{!s}' with name matching regex '{!s}'".format(fullName, packageNameRegex)
@@ -2223,15 +2240,22 @@ def processRequest(request, session):
 	'''
 	logger = LIBRARY_LOGGER.getSubLogger('processRequest')
 	
+	logger.trace("Calculating URI Base...")
+	uriBase = swagGl.getUriBase(request)
+	
+	logger.trace("Determining root Script Package for request, and by extension, the Swagger Statics and Definitions modules")
+	rootPackage = swagGl.getRootPackage(request)
+	swagStc = swagGl.getNamedModuleFromRoot(rootPackage, 'statics')
+	swagDf = swagGl.getNamedModuleFromRoot(rootPackage, 'definitions')
+	
 	#Doing the necessary extension of the WebDev Request Python Dictionary, since the WebDev Module doesn't
 	# do everything we had hoped that it would.
 	logger.trace("Initializing WebDevRequest instance.")
 	wdr = WebDevRequest(request, session)
 	wdr.logInitialReceipt()
-	
 	try:
-		logger.trace("Calculating URI information using URI Base of '{!s}'".format(swagStc.URIBASE))
-		wdr.augmentRequestURI(uriBase = swagStc.URIBASE)
+		logger.trace("Augmenting URI information using URI Base of '{!s}'".format(uriBase))
+		wdr.augmentRequestURI(uriBase = uriBase)
 	except (Exception, java.lang.Exception), e:
 		etype, evalue, tb = sys.exc_info() if isinstance(e, Exception) else (type(e), e, None)
 		logger.error(
@@ -2246,7 +2270,7 @@ def processRequest(request, session):
 	#Attempting to find the project script that defines the endpoint the request came to.
 	logger.trace("Will try finding a Script Module at path {!r}".format(wdr.swag['resource-path']))
 	try:
-		foundPackages = findScriptResourcesFromPath(wdr.swag['resource-path'])
+		foundPackages = findScriptResourcesFromPath(wdr.swag['resource-path'], swagStc)
 	except (Exception, java.lang.Exception), e:
 		etype, evalue, tb = sys.exc_info() if isinstance(e, Exception) else (type(e), e, None)
 		logger.error(
@@ -2284,6 +2308,7 @@ def processRequest(request, session):
 			wdr,
 			usingModule['fullName'],
 			usingModule['scriptModule'],
+			swagStc, swagDf,
 			logger
 		)
 	except (Exception, java.lang.Exception), e:

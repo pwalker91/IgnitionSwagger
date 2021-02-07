@@ -12,12 +12,12 @@ from collections import OrderedDict
 import textwrap
 import pprint
 import inspect
+import sys
 from com.inductiveautomation.ignition.common.script import ScriptPackage
 #Other Ignition Project Script Modules that we will use
 import server
 from __swagger2__ import requests as swagRq
-from __swagger2__ import definitions as swagDf
-from __swagger2__ import statics as swagStc
+from __swagger2__ import globals as swagGl
 
 
 
@@ -28,9 +28,10 @@ LIBRARY_LOGGER = server.getLogger("IgnitionSwagger2.json")
 
 
 
-def getEndpoints(parentPackage, endpointBase=''):
+def getEndpoints(swagStc, parentPackage, endpointBase=''):
 	'''
 	@FUNC	Searches the given Ignition Script Package Resource for all Script Resources that have an Endpoint class.
+	@PARAM	swagStc : Object, a Script Module containing the "Swagger Statics" for the API service
 	@PARAM	parentPackage : Object, the Ignition Script Package Resource
 	@PARAM	endpointBase : String, the base string for the Endpoints found in the Script Resources
 	@RETURN	PyDictionary, where the key is the endpoint path, and the value is the Endpoint class.
@@ -52,7 +53,7 @@ def getEndpoints(parentPackage, endpointBase=''):
 			continue
 		if isinstance(pModules[m], ScriptPackage):
 			logger.debug("Found a sub-package, '{!s}'".format(m))
-			foundEndpoints.update( getEndpoints(pModules[m], fullPackageName) )
+			foundEndpoints.update( getEndpoints(swagStc, pModules[m], fullPackageName) )
 		#I had issues using 'isinstance' to reliably test if the object `m` was a Script Module Resource, so
 		# I'm just going to assume that if it's NOT a Script Package Resource and has the appropriate name, then
 		# it probably is a Script Module Resource.
@@ -66,9 +67,11 @@ def getEndpoints(parentPackage, endpointBase=''):
 	return foundEndpoints
 #END DEF
 
-def cleanSwagger(obj):
+def cleanSwagger(obj, swagStc):
 	'''
 	@FUNC	Parses a dictionary and removes all of the Ignition Swagger specific keys.
+	@PARAM	obj : Dictionary, the dictionary to clean
+	@PARAM	swagStc : Object, a Script Module containing the "Swagger Statics" for the API service
 	'''
 	newobj = {}
 	for key in obj.keys():
@@ -76,7 +79,7 @@ def cleanSwagger(obj):
 			continue
 		#Anything that isn't a dictionary won't have keys, so no "special keys" to clean out
 		if isinstance(obj[key], types.DictionaryType):
-			newobj[key] = cleanSwagger(obj[key])
+			newobj[key] = cleanSwagger(obj[key], swagStc)
 		else:
 			newobj[key] = copy.deepcopy(obj[key])
 	#END FOR
@@ -98,14 +101,15 @@ def toDict(request, session):
 		# of this dictionary.
 	}
 	validEndpoints = OrderedDict()
-	for rootPackage in swagStc.ENDPOINT_ROOTS:
-		validEndpoints.update( getEndpoints(rootPackage) )
-	#END FOR
+	rootPackage = swagGl.getRootPackage(request)
+	swagStc = swagGl.getNamedModuleFromRoot(rootPackage, 'statics')
+	swagDf = swagGl.getNamedModuleFromRoot(rootPackage, 'definitions')
+	validEndpoints.update( getEndpoints(swagStc, rootPackage) )
 	
 	pathSwag = OrderedDict()
 	for path in sorted(validEndpoints.keys()):
 		logger.trace("Processing {!s}".format(path))
-		for httpMethod in swagStc.VALID_METHODS.keys():
+		for httpMethod in swagGl.VALID_METHODS.keys():
 			logger.trace("Looking for class named '{!s}'".format(httpMethod))
 			#No class for the HTTP method? skip
 			if (httpMethod not in validEndpoints[path].__dict__ or
@@ -176,7 +180,7 @@ def toDict(request, session):
 			logger.trace("Getting 'clean' Swagger for method '{!s}' on path '{!s}'".format(httpMethod, path))
 			if cleanPath not in pathSwag:
 				pathSwag[cleanPath] = OrderedDict()
-			pathSwag[cleanPath][httpMethod.lower()] = cleanSwagger(endpointMethodSwagger)
+			pathSwag[cleanPath][httpMethod.lower()] = cleanSwagger(endpointMethodSwagger, swagStc)
 			
 			#The Swagger in the HTTP Method class should also define the Tags and Tag Group the endpoint
 			# belongs under in the rendered documentation
