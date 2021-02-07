@@ -1,7 +1,7 @@
 import apiAuth
 from __swagger2__ import requests as swagRq
 from __swagger2__ import responses as swagRsp
-from __swagger2__ import statics as swagStc
+from v1 import statics as swagStc
 PREFIX = swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX
 
 
