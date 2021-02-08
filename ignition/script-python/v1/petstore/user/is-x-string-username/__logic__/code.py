@@ -27,7 +27,7 @@ class GET(swagRq.HttpMethod):
 		'summary': '',
 		'description': '',
 		'tags': [
-			''
+			'user'
 		],
 		'consumes': [
 			'application/json',
@@ -68,7 +68,7 @@ class PUT(swagRq.HttpMethod):
 		'summary': '',
 		'description': '',
 		'tags': [
-			''
+			'user'
 		],
 		'consumes': [
 			'application/json',
@@ -109,7 +109,7 @@ class DELETE(swagRq.HttpMethod):
 		'summary': '',
 		'description': '',
 		'tags': [
-			''
+			'user'
 		],
 		'consumes': [
 			'application/json',

@@ -63,7 +63,6 @@ To adjust the Postman Request resources to work with an externally-hosted Igniti
 ## Remaining Work To Do
 - [x] ~~Flesh out `README` at repository root level, explaining how to safely set up an Ignition project with these resources.~~
 - [ ] Fully implement mock `Pet Store` endpoints.
-- [ ] Document how to call the `test` endpoints.
 - [ ] Provide export of Postman requests for easier testing.
 - [ ] Flesh out `README` Script Resource in Ignition, explaining how to create new endpoints.
 - [ ] Document where to find "Project Variables" that can be changed, and what they can be safely changed to.

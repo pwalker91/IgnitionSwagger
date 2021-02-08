@@ -27,7 +27,7 @@ class GET(swagRq.HttpMethod):
 		'summary': '',
 		'description': '',
 		'tags': [
-			''
+			'pet'
 		],
 		'consumes': [
 			'application/json',

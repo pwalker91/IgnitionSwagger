@@ -77,7 +77,7 @@ class GET(swagRq.HttpMethod):
 	
 	@staticmethod
 	def __do__(wdr, logger):
-		logger.trace("Doing a thing")
+		logger.trace("Doing a user login thing")
 		return swagRsp.json(success=True, status='SUCCESS', data={'description': "I would do a thing"})
 	#END DEF
 #END CLASS

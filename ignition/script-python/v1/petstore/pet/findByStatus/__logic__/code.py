@@ -18,36 +18,76 @@ class GET(swagRq.HttpMethod):
 			{'method': apiAuth.simple.allowAll,},
 		],
 		PREFIX+'hide': False,
-		PREFIX+'validateRequest': False,
+		PREFIX+'validateRequest': True,
 		PREFIX+'validateResponse': False,
 		PREFIX+'tagGroup': 'Pet Store',
 		
 		 # ACTUAL SWAGGER DEFINITION
-		'operationId': '',
-		'summary': '',
-		'description': '',
+		'operationId': 'findPetsByStatus',
+		'summary': 'Finds Pets by status',
+		'description': 'Multiple status values can be provided with comma separated strings',
 		'tags': [
-			''
+			'pet'
 		],
 		'consumes': [
 			'application/json',
-			'application/x-www-form-urlencoded',
 		],
 		'produces': [
 			'application/json',
 			'application/xml',
 		],
+		'security': [
+			{'petstore_auth': ['write:pets', 'read:pets']}
+		],
 		'parameters': [
-			#
+			{
+				'in': 'query',
+				'name': 'status',
+				'description': 'Status values that need to be considered for filter',
+				'required': True,
+				'type': 'array',
+				'items': {
+					'type': 'string',
+					'enum': ["available", "pending", "sold"],
+					'default': "available"
+				},
+				'collectionFormat': "csv",
+				'example': 'available,pending',
+			}
 		],
 		'responses': {
-			#
+			"200": {
+				"description": "successful operation",
+				"schema": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/Pet"
+					}
+				}
+			},
+			'400': {"description": "Invalid status value"},
+			'default': swagStc.GENERIC_FAILURE_RESPONSE,
 		}
 	}
 	
 	@staticmethod
 	def __do__(wdr, logger):
-		logger.trace("Doing a thing")
-		return swagRsp.json(success=True, status='SUCCESS', data={'description': "successful operation"})
+		logger.trace("Doing a get findByStatus thing")
+		if any([
+			(v not in GET.SWAGGER['parameters'][0]['items']['enum'])
+			for v in wdr.swag['params']['status']]
+		):
+			return swagRsp.httpStatus(wdr.request, 405)
+		return swagRsp.json(success=True, status='SUCCESS', data={
+			    "photoUrls": ["url1"],
+			    "tags": [
+			        {"name": "string", "id": 1}
+			    ],
+			    "name": "saved-doggie",
+			    "id": 101,
+			    "category": {"name": "string", "id": 1},
+			    "status": "available"
+			}
+		)
 	#END DEF
 #END CLASS

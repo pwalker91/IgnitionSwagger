@@ -27,7 +27,7 @@ class POST(swagRq.HttpMethod):
 		'summary': '',
 		'description': '',
 		'tags': [
-			''
+			'user'
 		],
 		'consumes': [
 			'application/json',
