@@ -1931,6 +1931,7 @@ class Endpoint(object):
 		#NOTE!
 		# The execution of this function could, potentially, raise an exception. The exception will be caught and
 		# logged in the `callWebDevLogic` function.
+		self.logger.trace("Logic has been executed!")
 		return True
 	#END DEF
 	
@@ -2262,6 +2263,7 @@ def processRequest(request, session):
 			"Internal Server Error (WebDevRequest initialization). '{!s}'".format(e.message),
 			server.castToJavaException(e, tb)
 		)
+		logger.trace("Generating Internal Server Error response (Augmenting WebDevRequest)")
 		response = swagRsp.httpStatus(wdr.request, "Internal Server Error")
 		wdr.logOutgoingData(response)
 		return response
@@ -2277,6 +2279,7 @@ def processRequest(request, session):
 			"Internal Server Error (WebDevRequest initialization). '{!s}'".format(e.message),
 			server.castToJavaException(e, tb)
 		)
+		logger.trace("Generating Internal Server Error response (Finding Script Resource)")
 		response = swagRsp.httpStatus(wdr.request, "Internal Server Error")
 		wdr.logOutgoingData(response)
 		return response
@@ -2317,10 +2320,12 @@ def processRequest(request, session):
 			"Internal Server Error (Endpoint class initialization). '{!s}'".format(e.message),
 			server.castToJavaException(e, tb)
 		)
+		logger.trace("Generating Internal Server Error response (Endpoint Creation)")
 		response = swagRsp.httpStatus(wdr.request, "Internal Server Error")
 		wdr.logOutgoingData(response)
 		return response
 	#END TRY/EXCEPT
+	response = None
 	try:
 		logger.trace("Executing Endpoint")
 		response = endpointObj.execute()
@@ -2330,6 +2335,7 @@ def processRequest(request, session):
 				"Internal Server Error (BaseEndpoint class execution). '{!s}'".format(e.message),
 				server.castToJavaException(e, tb)
 			)
+		logger.trace("Generating Internal Server Error response (Endpoint Execution)")
 		response = swagRsp.httpStatus(wdr.request, "Internal Server Error")
 	finally:
 		wdr.logOutgoingData(response)

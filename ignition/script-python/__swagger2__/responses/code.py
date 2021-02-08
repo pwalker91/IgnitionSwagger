@@ -15,6 +15,7 @@ import types
 # LOGGER and CONSTANTS
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 LIBRARY_LOGGER = server.getLogger("IgnitionSwagger2.responses")
+
 # https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
 HTTP_CODE_STATUSES = copy.deepcopy(httplib.responses)
 HTTP_CODE_STATUSES.update({418: "I'm a Teapot"})
@@ -34,6 +35,8 @@ def json(status='SUCCESS', success=True, message=None, data={}):
 	@PARAM	data : PyDictionary, keys/values to include in the JSON response [DEFAULT: {}]
 	@RETURN	PyDictionary, a WebDev JSON response
 	'''
+	logger = LIBRARY_LOGGER.getSubLogger('json')
+	logger.trace("Creating base dictionary structure...")
 	values = {
 		"status": status.upper(),
 		"success": bool(success)
@@ -43,9 +46,11 @@ def json(status='SUCCESS', success=True, message=None, data={}):
 	##Note that we created our PyDictionary 'values' above, rather than simply adding the values to 'data'. This is
 	## because we want to leave it up to the developer what values they want to put in status/message/success, in case
 	## they want to overwrite the value/value-type that is put in there by default.
+	logger.trace("Combining base structure with given data")
 	if not isinstance(data, types.DictionaryType):
 		raise Exception("`data` must be a Dictionary")
 	values.update(data)
+	logger.trace("Returning final JSON response")
 	return {'json': values}
 #END DEF
 
@@ -54,21 +59,28 @@ def json(status='SUCCESS', success=True, message=None, data={}):
 def httpStatus(request, status):
 	'''
 	@FUNC	Sets the HTTP status code to the given value, and returns a simple WebDev 'response'
-	@PARAM	request : WebDev request object
+	@PARAM	request : WebDev Request object
 	@PARAM	status : Integer/String, the HTTP Code (Integer) or Status (String)
 	@RETURN	PyDictionary, the WebDev 'response'
 	'''
+	logger = LIBRARY_LOGGER.getSubLogger('httpStatus')
+	logger.trace("Given HTTP Status = {!r}".format(status))
 	code = status
 	text = status
 	if isinstance(text, types.StringTypes):
+		logger.trace("Status is a String. Getting Integer code")
 		code = HTTP_TEXT_STATUSES.get(text.lower(), None)
 	elif isinstance(code, types.IntType):
+		logger.trace("Status is an Integer. Getting String text")
 		text = HTTP_CODE_STATUSES.get(code, None)
 	else:
 		raise Exception("Somehow got an HTTP status that is neither a String or Integer. Got a {!s}".format(type(status)))
 	if code is None or text is None:
 		raise Exception("Failed to find Text and Code Status based on given input {!r} ({!s})".format(status, type(status)))
+	logger.trace("Extracting Servlet Response object")
 	servlet = request['servletResponse']
+	logger.trace("Setting Servlet Response's Code")
 	servlet.setStatus(code)
+	logger.trace("Returning 'response' text")
 	return {'response': '{} {}'.format(code, text)}
 #END DEF
