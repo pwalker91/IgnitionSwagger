@@ -444,11 +444,11 @@ class HTTP_METHOD_NAME: #eg. GET, POST, DELETE, PATH, OPTIONS
 				 - 'contentType' - The mime type. Need only if ambiguous.
 		'''
 		#To access URL Parameters, use the following structure
-		var = wdr['pathParams']['myPathParamName']
+		var = wdr.swag['pathParams']['myPathParamName']
 		#To access a URL Query Parameter, use the following structure
-		var = wdr['params']['urlQueryParamName']
+		var = wdr.swag['data']['urlQueryParamName']
 		#To access a Body Parameter, use the following structure
-		var = wdr['data']['bodyObject']['objectVar']
+		var = wdr.swag['data']['bodyObject']['objectVar']
 		
 		#The return of the functions should be a return that the WebDev Module can use.
 		return {'response': '42 is the answer'}

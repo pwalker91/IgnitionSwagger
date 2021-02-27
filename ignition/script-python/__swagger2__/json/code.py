@@ -144,7 +144,9 @@ def toDict(request, session):
 				)
 				continue
 			#END IF
-			endpointMethodSwagger = getattr(methodClass, swagStc.ENDPOINT_SWAGGER_VARIABLE, {})
+			endpointMethodSwagger = copy.deepcopy(
+				getattr(methodClass, swagStc.ENDPOINT_SWAGGER_VARIABLE, {})
+			)
 			
 			#Replacing the extra content that had to be added to the Script Package's name, so that we could
 			# correctly identify it as being a Path Parameter. For example, this will replace '{is-x-integer-pathParam}'
@@ -177,7 +179,11 @@ def toDict(request, session):
 				})
 			#END IF
 			
-			logger.trace("Getting 'clean' Swagger for method '{!s}' on path '{!s}'".format(httpMethod, path))
+			logger.trace(
+				"Getting 'clean' Swagger for method '{!s}' on path '{!s}'.".format(httpMethod, path) +
+					"(see details for Swagger)",
+				endpointMethodSwagger
+			)
 			if cleanPath not in pathSwag:
 				pathSwag[cleanPath] = OrderedDict()
 			pathSwag[cleanPath][httpMethod.lower()] = cleanSwagger(endpointMethodSwagger, swagStc)

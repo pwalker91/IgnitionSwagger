@@ -1,8 +1,3 @@
-# # # # # # # #
-# TODO:
-#  Implement some logic that will pretend to a Pet Store
-# # # # # # # #
-
 import apiAuth
 from __swagger2__ import requests as swagRq
 from __swagger2__ import responses as swagRsp
@@ -38,7 +33,7 @@ class POST(swagRq.HttpMethod):
 			'application/xml',
 		],
 		'security': [
-			{'petstore_auth': ['write:pets', 'read:pets']}
+			{'petstore_auth': ['write:pets', 'read:pets']},
 		],
 		'parameters': [
 			{

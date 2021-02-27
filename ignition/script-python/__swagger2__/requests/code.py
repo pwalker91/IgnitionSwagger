@@ -95,7 +95,7 @@ class WebDevRequest(object):
 		'headers':		[],
 		'uri':			[],
 		'httpmethod':	['headers'],
-		'body':			['headers','httpmethod'],
+		'content':		['headers','httpmethod'],
 		'urlparams':	[],
 	}
 	
@@ -307,25 +307,29 @@ class WebDevRequest(object):
 		return
 	#END DEF
 	
-	def augmentRequestBody(self, contentType, forceReCalcAug=False):
+	def augmentRequestContent(self, contentType, forceReCalcAug=False):
 		'''
-		@FUNC	Extracts more detailed "Body" data, based off what is given in the WebDev Request.
+		@FUNC	Extracts more detailed "Content" data, based off what is given in the WebDev Request.
+		@PARAM	contentType : String
 		@PARAM	forceReCalcAug : Boolean. If the augmentation has already be calculated, passing a True
 					will tell the function to ignore that and recalc.
-		@PARAM	contentType : String
 		@ADDS	['data']
+		@ADDS	['original-data']
 		@RETURN	N/A
 		'''
-		mykey = 'body'
+		mykey = 'content'
 		self.__validate_augment_request_dependencies(mykey)
 		if self.requestAugmentations[mykey] and not forceReCalcAug:
 			raise CustomExceptions.WebDevRequestException(
 				"You cannot trigger the augmentation of the request {!s} multiple times.".format(mykey)
 			)
 		else:
-			logger = LIBRARY_LOGGER.getSubLogger('WebDevRequest.augmentRequestBody')
+			logger = LIBRARY_LOGGER.getSubLogger('WebDevRequest.augmentRequestContent')
 			self.requestAugmentations[mykey] = False
 			self.swag['data'] = self._copyDictWithStringKeys(self.request.get('data',None))
+			#
+			# make sure set, if ifs false
+			#
 			requestHTTPMethod = self.swag['http-method']
 			requestContentType = self.swag['headers-lc'].get('content-type','UNKNOWN')
 			#If the given Content Type is not one of the allowed types for the HTTP Method being called, throw
@@ -337,6 +341,7 @@ class WebDevRequest(object):
 						"Allowed types are '{!s}'.".format(swagGl.VALID_METHODS[requestHTTPMethod])
 					)
 			#END IF
+			logger.trace("Determined Content-Type to be '{!s}'".format(contentType))
 			if contentType in swagGl.VALID_CONTENT_TYPES:
 				contentTypeParserClass = swagGl.VALID_CONTENT_TYPES[contentType]
 				if not contentTypeParserClass.isvalid(self.swag['data']):
@@ -348,8 +353,8 @@ class WebDevRequest(object):
 						contentTypeParserClass.parse(self.request)
 					)
 					logger.trace(
-						"Parsing results. data = {!r} , original-body = {!r}".format(
-							self.swag['data'], self.swag['original-body']
+						"Parsing results. data = {!r} , original-data = {!r}".format(
+							self.swag['data'], self.swag['original-data']
 						)
 					)
 					if not contentTypeParserClass.isvalid(self.swag['data']):
@@ -357,44 +362,18 @@ class WebDevRequest(object):
 							"Unable to parse HTTP Request Body as '{!s}'.".format(contentType) +
 							"Given Content Type of '{!s}'".format(requestContentType)
 						)
-				#END IF
+				else:
+					logger.debug("Given data passed validity test")
+				#END IF/ELSE
+			else:
+				raise CustomExceptions.InvalidContentTypeException(
+					"The Content-Type '{!s}' is not a valid type at this time '{!s}'. ".format(contentType) +
+					"Allowed types are '{!s}'.".format(swagGl.VALID_CONTENT_TYPES.keys())
+				)
 			#END IF
-			logger.trace("Cleaned up Boddy, if necessary. Done with augmentation")
+			logger.trace("Cleaned up Body, if necessary. Done with augmentation")
 			self.requestAugmentations[mykey] = True
 		#END IF/ELSE
-		return
-	#END DEF
-	
-	def augmentRequestURLParams(self, forceReCalcAug=False):
-		'''
-		@FUNC	Extracts more detailed "Header" data, based off what is given in the WebDev Request.
-		@PARAM	forceReCalcAug : Boolean. If the augmentation has already be calculated, passing a True
-					will tell the function to ignore that and recalc.
-		@ADDS	['params']
-		@RETURN	N/A
-		'''
-		mykey = 'urlparams'
-		self.__validate_augment_request_dependencies(mykey)
-		if self.requestAugmentations[mykey] and not forceReCalcAug:
-			raise CustomExceptions.WebDevRequestException(
-				"You cannot trigger the augmentation of the request {!s} multiple times.".format(mykey)
-			)
-		else:
-			logger = LIBRARY_LOGGER.getSubLogger('WebDevRequest.augmentRequestURLParams')
-			self.requestAugmentations[mykey] = False
-			logger.trace("Copying URL Params, making sure keys are all strings (and not unicode)")
-			self.swag['params'] = self._copyDictWithStringKeys(self.request.get('params',{}))
-			for key in self.swag['params'].keys():
-				if (isinstance(self.swag['params'][key], types.ListType) or
-					isinstance(self.swag['params'][key], types.TupleType)
-				):
-					fixedKey = key.replace('[','').replace(']','')
-					self.swag['params'][fixedKey] = list(self.swag['params'][key])
-					self.swag['params'].pop(key,None)
-			#END FOR
-			logger.trace("Cleaned up URL Param keys, if necessary. Done with augmentation")
-			self.requestAugmentations[mykey] = True
-		#END IF
 		return
 	#END DEF
 #END CLASS
@@ -698,18 +677,7 @@ def getDataSignatureFromSwagger(swaggerdef, direction, qualifier, swagStc, swagD
 				logger.trace("The parameter we are processing is not expected to come in the '{!s}'".format(qualifier))
 				continue
 			#At this point, we know that the param's "in" definition matches the qualifier.
-			if qualifier in ('formData', 'query', 'header', 'path'):
-				if 'name' not in param:
-					raise CustomExceptions.SwaggerParamPropMissingException(
-						"Every parameter with a definition must have a name. Definition given '{!r}'.".format(param)
-					)
-				logger.debug(
-					"Extracting incoming signature for '{!s}', which is expected to be in '{!s}'".format(
-						param['name'], qualifier
-					)
-				)
-				datSig[param['name']] = extractForSig(param, qualifier)
-			elif qualifier == 'body':
+			if qualifier == 'body':
 				#We expect the 'body' type parameter to have a schema. If the 'schema' key is
 				# not found, we will use an empty dictionary as a default
 				schema = param.get('schema', {})
@@ -721,7 +689,21 @@ def getDataSignatureFromSwagger(swaggerdef, direction, qualifier, swagStc, swagD
 				#The requirement of items in an object is defined by the Object, not by the item in the object.
 				for key in param['schema'].get('properties',{}):
 					datSig[key]['required'] = key in param['schema'].get('required',[])
-			#END IF/ELIF
+			else:
+				#All other "in"s will use a more simple method for extracting the correct
+				# varaible signature. The "in" qualifier is probably among the following:
+				# - formData, query, header, path
+				if 'name' not in param:
+					raise CustomExceptions.SwaggerParamPropMissingException(
+						"Every parameter with a definition must have a name. Definition given '{!r}'.".format(param)
+					)
+				logger.debug(
+					"Extracting incoming signature for '{!s}', which is expected to be in '{!s}'".format(
+						param['name'], qualifier
+					)
+				)
+				datSig[param['name']] = extractForSig(param, qualifier)
+			#END IF/ELSE
 		#END FOR
 	#
 	# https://swagger.io/docs/specification/2-0/describing-responses/
@@ -775,22 +757,30 @@ def obscure(data, sig):
 	@PARAM	sig : HttpDataSignature Object
 	@RETURN	Python Dictionary, the original data with the defined keys obscured (ie. changed to "REDACTED")
 	'''
+	logger = LIBRARY_LOGGER.getSubLogger('obscure')
+	logger.debug("Received data of type {!s}. (see details for signature)".format(type(data)), sig)
 	if not isinstance(data, types.DictionaryType):
 		raise Exception('Obscuring of data requires a Python Dictionary object for the first parameter.')
 	if not isinstance(sig, HttpDataSignature):
 		raise Exception('Obscuring of data requires an HttpDataSignature object for the second parameter.')
+	logger.trace("Given data and signature are the valid data types.")
 	newdata = copy.deepcopy(data)
 	for key in sig:
+		logger.trace("Processing key '{!s}'".format(key))
 		if key not in newdata:
+			logger.trace("Key '{!s}' not in data. Skipping...".format(key))
 			continue
 		#Only obscure data if specified in the Data Signature Dictionary. Note that the Swagger uses the
 		# key 'custom prefix'+'obscure', which then becomes the key 'obscure'
 		# in the Data Signature Dictionary
 		if 'obscure' in sig[key] and bool(sig[key]['obscure']):
+			logger.trace("Redacting value for key '{!s}'!".format(key))
 			newdata[key] = 'REDACTED'
 		elif isinstance(newdata[key], types.DictionaryType):
+			logger.trace("Key '{!s}' maps to a dictionary. Making recursive call...".format(key))
 			newdata[key] = obscure( newdata[key], sig[key].get('signature',HttpDataSignature()) )
 		elif isinstance(newdata[key], types.ListType):
+			logger.trace("Key '{!s}' maps to a list. Redacting all data!".format(key))
 			newListOfData = []
 			for item in newdata[key]:
 				arrayItem = {}
@@ -1669,10 +1659,7 @@ class Endpoint(object):
 		
 		if self.wdr.swag['http-method'] == 'GET':
 			self.logger.trace("Augmenting WebDevRequest object, parsing URL Query Params")
-			#Un-comment the two lines below if you aren't worried about un-obscured data showing the gateway logs
-			##currentParams = self.wdr.request.get('params',None)
-			##self.logger.trace("request['params'] = {!s}, repr = {!r}".format(type(currentParams), currentParams))
-			self.wdr.augmentRequestURLParams()
+			self.wdr.augmentRequestContent(contentType = 'application/x-www-form-urlencoded')
 		else:
 			# # # # # #
 			# TODO:
@@ -1717,14 +1704,14 @@ class Endpoint(object):
 			#Un-comment the two lines below if you aren't worried about un-obscured data showing the gateway logs
 			##currentBody = self.wdr.request.get('data',None)
 			##self.logger.trace("request['data'] = {!s}, repr = {!r}".format(type(currentBody), currentBody))
-			self.logger.trace("Augmenting WebDevRequest object, parsing Body as '{!s}'".format(self.__consuming))
-			self.wdr.augmentRequestBody(self.__consuming)
+			self.logger.trace("Augmenting WebDevRequest object, parsing Request as '{!s}'".format(self.__consuming))
+			self.wdr.augmentRequestContent(self.__consuming)
 		#END IF/ELSE
 		
 		#Verifying that the Body or URL Params were parsed and can now be referenced in the `swag` Python Dictionary.
-		if not (self.wdr.requestAugmentations['body'] or self.wdr.requestAugmentations['urlparams']):
+		if not self.wdr.requestAugmentations['content']:
 			raise CustomExceptions.EndpointInitializationException(
-					"Could not successfully extend the `body` or `urlparams` data in the WebDevRequest object."
+					"Could not successfully augment/clean-up the content in the WebDevRequest object."
 				)
 		#END IF
 		
@@ -1876,24 +1863,22 @@ class Endpoint(object):
 			if self.wdr.swag['http-method'] == 'GET':
 				dataInKey = 'query'
 			else:
-				if self.__consuming == 'application/json':
-					dataInKey = 'body'
-				elif self.__consuming == 'application/x-www-form-urlencoded':
-					dataInKey = 'formData'
-				else:
-					dataInKey = 'body'
+				dataInKey = swagGl.VALID_CONTENT_TYPES_TO_SWAGGER_IN.get(self.__consuming, 'UNKNOWN')
 			#END IF/ELSE
+			self.logger.trace("Determined data key to be '{!s}'".format(dataInKey))
 			sig = self.__dataSignatures['incoming'][dataInKey]
 			if len(sig) > 0:
 				dataLocation = swagGl.VALID_SWAGGER_IN[dataInKey]
 				data = self.wdr.swag[dataLocation]
 				self.logger.trace("Validating incoming data in \"self.wdr.swag['{!s}']\".".format(dataLocation))
+				self.logger.trace("all swag", self.wdr.swag)
 				_requestValidation = validate(
 					data, sig,
 					doTypeCasting = (False if dataLocation=='body' else True),
 					isForResponse = False
 				)
 				#Regardless of whether the request succeeded or not, we log what was received
+				self.logger.trace("Data was validated. Logging to Gateway Console Log...")
 				self.wdr.logIncomingData(dataLocation, data, sig)
 				if not _requestValidation.ALL_VALID:
 					self.logger.debug("Request data failed to validate. {!s}".format(_requestValidation))

@@ -98,9 +98,9 @@ class GET(swagRq.HttpMethod):
 	@staticmethod
 	def __do__(wdr, LOGGER):
 		LOGGER.debug("I'm in the endpoint logic!")
-		if wdr.swag['params']['arg1'] == 0:
+		if wdr.swag['data']['arg1'] == 0:
 			raise Exception("I'm failing.")
-		if wdr.swag['params']['arg1'] == 42:
+		if wdr.swag['data']['arg1'] == 42:
 			return swagRsp.json(
 						success=False, status='FAILURE',
 						message='You gave a bad number. Try a different one.'

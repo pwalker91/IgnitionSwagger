@@ -1,8 +1,3 @@
-# # # # # # # #
-# TODO:
-#  Implement some logic that will pretend to a Pet Store
-# # # # # # # #
-
 import apiAuth
 from __swagger2__ import requests as swagRq
 from __swagger2__ import responses as swagRsp
@@ -19,7 +14,7 @@ class GET(swagRq.HttpMethod):
 		],
 		PREFIX+'hide': False,
 		PREFIX+'validateRequest': True,
-		PREFIX+'validateResponse': False,
+		PREFIX+'validateResponse': True,
 		PREFIX+'tagGroup': 'Pet Store',
 		
 		 # ACTUAL SWAGGER DEFINITION
@@ -37,7 +32,7 @@ class GET(swagRq.HttpMethod):
 			'application/xml',
 		],
 		'security': [
-			{'petstore_auth': ['write:pets', 'read:pets']}
+			{'petstore_auth': ['write:pets', 'read:pets']},
 		],
 		'parameters': [
 			{
@@ -48,22 +43,28 @@ class GET(swagRq.HttpMethod):
 				'type': 'array',
 				'items': {
 					'type': 'string',
-					'enum': ["available", "pending", "sold"],
-					'default': "available"
+					'enum': ['available', 'pending', 'sold'],
+					'default': 'available'
 				},
-				'collectionFormat': "csv",
+				'collectionFormat': 'csv',
 				'example': 'available,pending',
 			}
 		],
 		'responses': {
-			"200": {
+			'200': {
 				"description": "successful operation",
 				"schema": {
-					"type": "array",
-					"items": {
-						"$ref": "#/definitions/Pet"
-					}
-				}
+					"type": "object",
+					"properties": {
+						"pets": {
+							"type": "array",
+							"items": {
+								"$ref": "#/definitions/Pet"
+							},
+						},
+					},
+					"required": ["pets"],
+				},
 			},
 			'400': {"description": "Invalid status value"},
 			'default': swagStc.GENERIC_FAILURE_RESPONSE,
@@ -75,18 +76,22 @@ class GET(swagRq.HttpMethod):
 		logger.trace("Doing a get findByStatus thing")
 		if any([
 			(v not in GET.SWAGGER['parameters'][0]['items']['enum'])
-			for v in wdr.swag['params']['status']]
-		):
-			return swagRsp.httpStatus(wdr.request, 405)
+			for v in wdr.swag['data']['status']
+		]):
+			return swagRsp.httpStatus(wdr.request, 400)
 		return swagRsp.json(success=True, status='SUCCESS', data={
-			    "photoUrls": ["url1"],
-			    "tags": [
-			        {"name": "string", "id": 1}
-			    ],
-			    "name": "saved-doggie",
-			    "id": 101,
-			    "category": {"name": "string", "id": 1},
-			    "status": "available"
+				"pets": [
+					{
+						"photoUrls": ["url1"],
+						"tags": [
+							{"name": "string", "id": 1}
+						],
+						"name": "saved-doggie",
+						"id": 101,
+						"category": {"name": "string", "id": 1},
+						"status": "available"
+					},
+				],
 			}
 		)
 	#END DEF

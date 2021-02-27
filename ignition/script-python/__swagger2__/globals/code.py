@@ -10,6 +10,7 @@ import system
 import sys
 import types
 import re
+import copy
 from collections import OrderedDict
 import pprint
 import java.lang.Exception
@@ -107,7 +108,6 @@ class dataParsers:
 		'''
 		@CLASS	Validation and parsing of Request data when given in the format JSON
 		'''
-		
 		@staticmethod
 		def isvalid(obj):
 			'''
@@ -117,7 +117,6 @@ class dataParsers:
 			'''
 			return isinstance(obj, types.DictionaryType)
 		#END DEF
-		
 		@staticmethod
 		def parse(request):
 			'''
@@ -142,93 +141,130 @@ class dataParsers:
 			# needs to access the original content.
 			res = {
 				'data': system.util.jsonDecode(body),
-				'original-body': body
+				'original-data': body
 			}
 			logger.trace("Returning {!r}".format(res))
 			logger.trace("res['data'] is {!s}".format(type(res['data'])))
 			return res
 		#END DEF
-		
 	#END CLASS
 	
 	class Type_URLEncoded:
 		'''
 		@CLASS	Validation and parsing of Request data when given in the format URL Encoded
 		'''
-		
 		@staticmethod
 		def isvalid(obj):
-			#Assumes that Ignition already did everything it needed to parse the URL encoded data
+			#Making sure that we have a dictionary and that none of the key contain square brackets
+			if not isinstance(obj, types.DictionaryType):
+				return False
+			if any([  ('[' in key or ']' in key) for key in obj.keys()  ]):
+				return False
 			return True
-			#return isinstance(obj, types.DictionaryType)
 		#END DEF
-		
 		@staticmethod
 		def parse(request):
-			#If `parse` happens to be called, we'll just return the already-present data
-			return {
-				'data': copy.deepcopy(request['data']),
-				'original-body': request['data'],
+			logger = LIBRARY_LOGGER.getSubLogger('dataParsers.Type_URLEncoded__parse')
+			logger.trace("Copying URL Params, making sure keys are all strings (and not unicode)")
+			newdata = copy.deepcopy(request.get('params',{}))
+			for key in newdata.keys():
+				if (isinstance(newdata[key], types.ListType) or
+					isinstance(newdata[key], types.TupleType)
+				):
+					fixedKey = key.replace('[','').replace(']','')
+					newdata[fixedKey] = list(newdata[key])
+					newdata.pop(key,None)
+			#END FOR
+			logger.trace("Cleaned up URL Param keys, if necessary")
+			res = {
+				'data': newdata,
+				'original-data': request.get('params',{}),
 			}
+			logger.trace("Returning {!r}".format(res))
+			logger.trace("res['data'] is {!s}".format(type(res['data'])))
+			return res
 		#END DEF
-		
-	#END CLASS
-	
-	class Type_FormData:
-		'''
-		@CLASS	Validation and parsing of Request data when given in the format Form Data
-		'''
-		
-		@staticmethod
-		def isvalid(obj):
-			#Assumes that Ignition already did everything it needed to parse the URL encoded data
-			return True
-			#return isinstance(obj, types.DictionaryType)
-		#END DEF
-		
-		@staticmethod
-		def parse(request):
-			#If `parse` happens to be called, we'll just return the already-present data
-			return {
-				'data': copy.deepcopy(request['data']),
-				'original-body': request['data'],
-			}
-		#END DEF
-		
 	#END CLASS
 	
 	class Type_TextPlain:
 		'''
 		@CLASS	Validation and parsing of Request data when given in the format Plain Text
 		'''
-		
 		@staticmethod
 		def isvalid(obj):
 			return isinstance(obj, types.StringTypes)
 		#END DEF
-		
 		@staticmethod
 		def parse(request):
 			#If `parse` happens to be called, we'll just return the already-present data
 			return {
 				'data': copy.deepcopy(request['data']),
-				'original-body': request['data'],
+				'original-data': request['data'],
 			}
 		#END DEF
-		
 	#END CLASS
+	
+	#class Type_FormData:
+	#	'''
+	#	@CLASS	Validation and parsing of Request data when given in the format Form Data
+	#	'''
+	#	@staticmethod
+	#	def isvalid(obj):
+	#		#Assumes that Ignition already did everything it needed to parse the URL encoded data
+	#		return False
+	#		#return isinstance(obj, types.DictionaryType)
+	#	#END DEF
+	#	@staticmethod
+	#	def parse(request):
+	#		#If `parse` happens to be called, we'll just return the already-present data
+	#		logger = LIBRARY_LOGGER.getSubLogger('dataParsers.Type_FormData__parse')
+	#		logger.trace("{!s}".format(type(request['data'])))
+	#		logger.trace("{!r}".format(request['data']))
+	#		logger.trace("data {!s}".format(request['data']))
+	#		logger.trace("params {!s}".format(request['params']))
+	#		logger.trace("{!r}".format(request))
+	#		return {
+	#			'data': copy.deepcopy(request['data']),
+	#			'original-data': request['data'],
+	#		}
+	#	#END DEF
+	##END CLASS
+
 #END CLASSes
 
 
+
+#In Swagger, the "in" field on a parameter definition defines where the data is
+# excepted to be found in `WebDevRequest.swag`
+VALID_SWAGGER_IN = OrderedDict([
+	#('path', 'pathParams'),
+	('header', 'headers'),
+	('query', 'data'),
+	('formData', 'data'),
+	('body', 'data'),
+])
 
 #The valid content types that we will accept, with references to the functions that
 # determine if the data was correctly parsed by the WebDev Module, and how to parse if not
 VALID_CONTENT_TYPES = {
 	'application/json': dataParsers.Type_JSON,
 	'application/x-www-form-urlencoded': dataParsers.Type_URLEncoded,
-	'multipart/form-data': dataParsers.Type_FormData,
 	'text/plain': dataParsers.Type_TextPlain,
 	## NOT CURRENTLY IMPLEMENTED
+	#'multipart/form-data': dataParsers.Type_FormData,
+	#'application/xml': None,
+	#'application/octet-stream': None,
+	#'text/html': None,
+}
+
+#With a valid content type, we need to know what value for the Swagger "in" key we need to look
+# in. This can change depending on the content type.
+VALID_CONTENT_TYPES_TO_SWAGGER_IN = {
+	'application/json': 'body',
+	'application/x-www-form-urlencoded': 'formData',
+	'text/plain': 'body',
+	## NOT CURRENTLY IMPLEMENTED
+	#'multipart/form-data': 'formData',
 	#'application/xml': None,
 	#'application/octet-stream': None,
 	#'text/html': None,
@@ -244,23 +280,13 @@ VALID_METHODS = OrderedDict([
 	# Methods defined in this dictionary. And to maintain that order, I need to initialize the
 	# Ordered Dictionary using a list of tuples, and NOT a Dictionary.
 	('GET',		None),
-	('POST',	['application/json', 'application/x-www-form-urlencoded', 'multipart/form-data', 'text/plain']),
-	('PUT',		['application/json', 'application/x-www-form-urlencoded', 'multipart/form-data', 'text/plain']),
-	('PATCH',	['application/json', 'application/x-www-form-urlencoded', 'multipart/form-data', 'text/plain']),
-	('DELETE',	['application/json', 'application/x-www-form-urlencoded', 'multipart/form-data', 'text/plain']),
+	('POST',	['application/json', 'application/x-www-form-urlencoded', 'text/plain']),
+	('PUT',		['application/json', 'application/x-www-form-urlencoded', 'text/plain']),
+	('PATCH',	['application/json', 'application/x-www-form-urlencoded', 'text/plain']),
+	('DELETE',	['application/json', 'application/x-www-form-urlencoded', 'text/plain']),
 	('HEAD',	None),
 	('OPTIONS',	None),
 	('TRACE',	None),
-])
-
-#In Swagger, the "in" field on a parameter definition defines where the data is
-# excepted to be found in `WebDevRequest.swag`
-VALID_SWAGGER_IN = OrderedDict([
-	#('path',	'pathParams'),
-	('header',	'headers'),
-	('query',	'params'),
-	('formData', 'data'),
-	('body',	'data'),
 ])
 
 #The valid Swagger Data Types that are allowed at a specfic data location (ie. the "in"
