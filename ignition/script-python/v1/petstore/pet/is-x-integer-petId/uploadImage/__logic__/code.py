@@ -23,25 +23,44 @@ class POST(swagRq.HttpMethod):
 		PREFIX+'tagGroup': 'Pet Store',
 		
 		 # ACTUAL SWAGGER DEFINITION
-		'operationId': '',
-		'summary': '',
+		'operationId': 'uploadFile',
+		'summary': 'uploads an image',
 		'description': '',
 		'tags': [
 			'pet'
 		],
 		'consumes': [
-			'application/json',
-			'application/x-www-form-urlencoded',
+			'multipart/form-data',
 		],
 		'produces': [
 			'application/json',
-			'application/xml',
 		],
 		'parameters': [
-			#
+			#No parameters here, because the Script Package `is-x-integer-petId` supplies the
+			# Swagger Magic the necessary rules for validation
+			{
+				"name": "additionalMetadata",
+				"in": "formData",
+				"description": "Additional data to pass to server",
+				"required": false,
+				"type": "string"
+			},
+			{
+				"name": "file",
+				"in": "formData",
+				"description": "file to upload",
+				"required": false,
+				"type": "file"
+			}
 		],
 		'responses': {
-			#
+			'200': {
+				"description": "successful operation",
+				"schema": {
+					"$ref": "#/definitions/ApiResponse"
+				}
+			},
+			'default': swagStc.GENERIC_FAILURE_RESPONSE,
 		}
 	}
 	

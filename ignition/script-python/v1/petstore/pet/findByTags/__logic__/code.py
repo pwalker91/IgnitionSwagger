@@ -1,8 +1,3 @@
-# # # # # # # #
-# TODO:
-#  Implement some logic that will pretend to a Pet Store
-# # # # # # # #
-
 import apiAuth
 from __swagger2__ import requests as swagRq
 from __swagger2__ import responses as swagRsp
@@ -18,14 +13,15 @@ class GET(swagRq.HttpMethod):
 			{'method': apiAuth.simple.allowAll,},
 		],
 		PREFIX+'hide': False,
-		PREFIX+'validateRequest': False,
-		PREFIX+'validateResponse': False,
+		PREFIX+'validateRequest': True,
+		PREFIX+'validateResponse': True,
 		PREFIX+'tagGroup': 'Pet Store',
 		
 		 # ACTUAL SWAGGER DEFINITION
-		'operationId': '',
-		'summary': '',
-		'description': '',
+		'deprecated': True,
+		'operationId': 'findPetsByTags',
+		'summary': 'Finds Pets by tags',
+		'description': 'Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.',
 		'tags': [
 			'pet'
 		],
@@ -37,17 +33,66 @@ class GET(swagRq.HttpMethod):
 			'application/json',
 			'application/xml',
 		],
+		'security': [
+			{'petstore_auth': ['write:pets', 'read:pets']},
+		],
 		'parameters': [
-			#
+			{
+				'in': 'query',
+				'name': 'tags',
+				'description': 'Tags to filter by',
+				'required': True,
+				'type': 'array',
+				'items': {
+					'type': 'string'
+				},
+				'collectionFormat': 'csv',
+				'example': 'tag1,tag2',
+			}
 		],
 		'responses': {
-			#
+			'200': {
+				"description": "successful operation",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"pets": {
+							"type": "array",
+							"items": {
+								"$ref": "#/definitions/Pet"
+							},
+						},
+					},
+					"required": ["pets"],
+				},
+			},
+			'400': {"description": "Invalid tag value"},
+			'default': swagStc.GENERIC_FAILURE_RESPONSE,
 		}
 	}
 	
 	@staticmethod
 	def __do__(wdr, logger):
-		logger.trace("Doing a thing")
-		return swagRsp.json(success=True, status='SUCCESS', data={'description': "successful operation"})
+		logger.trace("Doing a get findByTags thing")
+		if any([
+			("invalid" in v.lower())
+			for v in wdr.swag['data']['tags']
+		]):
+			return swagRsp.httpStatus(wdr.request, 400)
+		return swagRsp.json(success=True, status='SUCCESS', data={
+				"pets": [
+					{
+						"photoUrls": ["url1"],
+						"tags": [
+							{"name": "string", "id": 1}
+						],
+						"name": "saved-doggie",
+						"id": 101,
+						"category": {"name": "string", "id": 1},
+						"status": "available"
+					},
+				],
+			}
+		)
 	#END DEF
 #END CLASS
