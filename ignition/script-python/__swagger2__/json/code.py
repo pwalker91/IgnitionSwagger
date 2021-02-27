@@ -210,6 +210,7 @@ def toDict(request, session):
 		('swagger', '2.0'),
 		('host', swagStc.HOST_NAME),
 		('basePath', '/'),
+		('tags', swagDf.TAGS),
 		('schemes', swagDf.SCHEMES),
 		('info', swagDf.INFO),
 		('securityDefinitions', swagDf.SECURITY),
