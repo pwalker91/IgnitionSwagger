@@ -2278,6 +2278,11 @@ def processRequest(request, session):
 			"Found multiple Script Modules. Will be using the deepest one. (see details for all matches)",
 			foundPackages
 		)
+		# # # # # # # #
+		# TODO:
+		# Use best match. If exact match, use.
+		# else, use variable
+		# # # # # # # #
 	#END IF/ELIF
 	#The function could have found more that 1 Script Module that matched the path followed. We are going
 	# to default to using the "deepest" one, as that is the one that had the most URL parts that matched.

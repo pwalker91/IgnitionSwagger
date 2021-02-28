@@ -42,14 +42,14 @@ class POST(swagRq.HttpMethod):
 				"name": "additionalMetadata",
 				"in": "formData",
 				"description": "Additional data to pass to server",
-				"required": false,
+				"required": False,
 				"type": "string"
 			},
 			{
 				"name": "file",
 				"in": "formData",
 				"description": "file to upload",
-				"required": false,
+				"required": False,
 				"type": "file"
 			}
 		],

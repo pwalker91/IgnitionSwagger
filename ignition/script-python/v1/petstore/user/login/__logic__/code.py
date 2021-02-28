@@ -77,7 +77,11 @@ class GET(swagRq.HttpMethod):
 	
 	@staticmethod
 	def __do__(wdr, logger):
-		logger.trace("Doing a user login thing")
+		logger.trace("Doing a get user/login thing")
+		logger.trace("{!r}".format(wdr))
+		if 'user' in wdr.swag['data']['username']:
+			return swagRsp.httpStatus(wdr.request, 400)
+		#set headers
 		return swagRsp.json(success=True, status='SUCCESS', data={'description': "I would do a thing"})
 	#END DEF
 #END CLASS

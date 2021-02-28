@@ -1,8 +1,3 @@
-# # # # # # # #
-# TODO:
-#  Implement some logic that will pretend to a Pet Store
-# # # # # # # #
-
 import apiAuth
 from __swagger2__ import requests as swagRq
 from __swagger2__ import responses as swagRsp
@@ -18,8 +13,8 @@ class GET(swagRq.HttpMethod):
 			{'method': apiAuth.simple.allowAll,},
 		],
 		PREFIX+'hide': False,
-		PREFIX+'validateRequest': False,
-		PREFIX+'validateResponse': False,
+		PREFIX+'validateRequest': True,
+		PREFIX+'validateResponse': True,
 		PREFIX+'tagGroup': 'Pet Store',
 		
 		 # ACTUAL SWAGGER DEFINITION
@@ -42,7 +37,7 @@ class GET(swagRq.HttpMethod):
 	
 	@staticmethod
 	def __do__(wdr, logger):
-		logger.trace("Doing a user logout thing")
+		logger.trace("Doing a get user/logout thing")
 		return swagRsp.json(success=True, status='SUCCESS', data={'description': "successful operation"})
 	#END DEF
 #END CLASS
