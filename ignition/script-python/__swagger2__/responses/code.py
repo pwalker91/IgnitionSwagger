@@ -54,8 +54,6 @@ def json(status='SUCCESS', success=True, message=None, data={}):
 	return {'json': values}
 #END DEF
 
-
-
 def httpStatus(request, status):
 	'''
 	@FUNC	Sets the HTTP status code to the given value, and returns a simple WebDev 'response'
@@ -83,4 +81,18 @@ def httpStatus(request, status):
 	servlet.setStatus(code)
 	logger.trace("Returning 'response' text")
 	return {'response': '{} {}'.format(code, text)}
+#END DEF
+
+def setHeader(request, header, value):
+	'''
+	@FUNC	Sets a header on the HHTP response
+	@PARAM	request : WebDev Request object
+	@PARAM	header : String, the header to set
+	@PARAM	value : String, the header's value
+	@RETURN	N/A
+	'''
+	logger = LIBRARY_LOGGER.getSubLogger('setHeader')
+	logger.trace("Given Header/Value of '{!s}'/'{!s}'".format(header, value))
+	request['servletResponse'].setHeader(header, value)
+	logger.trace("Header set.")
 #END DEF

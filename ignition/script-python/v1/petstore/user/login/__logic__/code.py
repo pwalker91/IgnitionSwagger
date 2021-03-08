@@ -1,8 +1,3 @@
-# # # # # # # #
-# TODO:
-#  Implement some logic that will pretend to a Pet Store
-# # # # # # # #
-
 import apiAuth
 from __swagger2__ import requests as swagRq
 from __swagger2__ import responses as swagRsp
@@ -51,7 +46,7 @@ class GET(swagRq.HttpMethod):
 			}
 		],
 		'responses': {
-			"200": {
+			'200': {
 				"description": "successful operation",
 				"headers": {
 					"X-Expires-After": {
@@ -69,19 +64,19 @@ class GET(swagRq.HttpMethod):
 					"type": "string"
 				}
 			},
-			"400": {
-				"description": "Invalid username/password supplied"
-			}
+			'400': { "description": "Invalid username/password supplied" },
+			'default': swagStc.GENERIC_FAILURE_RESPONSE,
 		}
 	}
 	
 	@staticmethod
 	def __do__(wdr, logger):
 		logger.trace("Doing a get user/login thing")
-		logger.trace("{!r}".format(wdr))
+		#logger.trace("{!r}".format(wdr))
 		if 'user' in wdr.swag['data']['username']:
 			return swagRsp.httpStatus(wdr.request, 400)
-		#set headers
+		swagRsp.setHeader(wdr.request, "X-Expires-After", "2099-01-01T00:00:00 +00:00")
+		swagRsp.setHeader(wdr.request, "X-Rate-Limit", "500")
 		return swagRsp.json(success=True, status='SUCCESS', data={'description': "I would do a thing"})
 	#END DEF
 #END CLASS
