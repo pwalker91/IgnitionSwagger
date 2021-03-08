@@ -739,13 +739,26 @@ def getDataSignatureFromSwagger(swaggerdef, direction, qualifier, swagStc, swagD
 		if schema is None or not isinstance(schema, types.DictionaryType):
 			logger.debug("No schema found for definition of '{!s}' response.".format(qualifier))
 			return datSig
-		#When creating a signature for a response, the "data location" is always the body, since we are only
-		# creating response signatures for JSON responses that have a 'schema' defined, similar to how
-		# the HTTP Body parameters are defined.
-		logger.debug("Extracting outgoing signature for definition of '{!s}' response".format(qualifier))
-		datSig = extractForSig(schema, 'body')['signature']
-		for key in schema.get('properties',{}):
-			datSig[key]['required'] = key in schema.get('required',[])
+		schemaType = schema.get('type',"string")
+		if schemaType == 'object':
+			#When creating a signature for a response, the "data location" is always the body, since we are only
+			# creating response signatures for JSON responses that have a 'schema' defined, similar to how
+			# the HTTP Body parameters are defined.
+			logger.debug("Extracting outgoing signature for definition of '{!s}' object response".format(qualifier))
+			datSig = extractForSig(schema, 'body')['signature']
+			for key in schema.get('properties',{}):
+				datSig[key]['required'] = key in schema.get('required',[])
+		elif schemaType == 'string':
+			logger.debug("Outgoing response specified as a type 'string'.")
+			pass
+			# # # # # # # # # #
+			# TODO:
+			# The logic here should handle different types of responses more gracefully.
+			# This will likely require some more abstraction into how the `Endpoint` class handles
+			#  the validation of a generated response.
+			# # # # # # # # # #
+		else:
+			raise Exception("The outgoing response needs to have a valid specified 'type'.")
 	#END IF/ELSE
 	return datSig
 #END DEF
