@@ -2070,19 +2070,20 @@ class Endpoint(object):
 
 
 
-def findScriptResourcesFromPath(possiblePath, swagStc):
+def findBestScriptResourceFromPath(possiblePath, swagStc):
 	'''
 	@FUNC	Attempts to use the List of Strings to find a Script Resource
 	@PARAM	possiblePath : List of Strings
 	@PARAM	swagStc : Reference to a Script Module for the "Swagger Statics"
-	@RETURN	List of Dictionaries, containing data about the Script Modules found that matched the path given.
-				Dictionaries will contain the following keys:
-				 - fullName : String
-				 - scriptModule : Script Module Object
-				 - pathParams : Dictionary, mapping a Path Parameter to the value given
-				 - remainingPath : List of Strings
+	@RETURN	Dictionary, containing data about the Script Modules found that matched the path given.
+			Dictionary will contain the following keys:
+			 - fullName : String
+			 - scriptModule : Script Module Object
+			 - pathParams : Dictionary, mapping a Path Parameter to the value given
+			 - remainingPath : List of Strings
+			None will be returned if no Script Module is found
 	'''
-	logger = LIBRARY_LOGGER.getSubLogger('findScriptResourceFromPath')
+	logger = LIBRARY_LOGGER.getSubLogger('findBestScriptResourceFromPath')
 	logger.trace("Given Path = {!r}".format(possiblePath))
 	if not all([isinstance(_,types.StringTypes) for _ in possiblePath]):
 		raise Exception("Was not given a List of Strings.")
@@ -2205,8 +2206,100 @@ def findScriptResourcesFromPath(possiblePath, swagStc):
 		return possiblePackages
 	#END DEF
 	foundPackages = findPossibleScriptPackages(endpointBase, cleanPath[1:])
-	logger.debug("Possible Endpoint Logic found (see log details)", foundPackages)
-	return foundPackages
+	logger.debug(
+		"Possible Endpoint Logic found. {!s} packages found (see log details)".format(len(foundPackages)),
+		foundPackages
+	)
+	
+	if len(foundPackages) == 0:
+		logger.trace("No packages found. Returning None...")
+		return None
+	elif len(foundPackages) == 1:
+		logger.trace("Found exactly one package. Returning...")
+		return foundPackages[-1]
+	else:
+		logger.trace("Found mor than one package. Determining best match...")
+		#To find the best match, we are going to start by finding the packages that have the shortest
+		# number of "remaining path" items left. We are going to process the items in reverse order, since
+		# the end of the list of Script Packages should have the shortest remaining path.
+		minRemainingPath = -1
+		for pckg in foundPackages:
+			if minRemainingPath == -1 or len(pckg['remainingPath']) < minRemainingPath:
+				minRemainingPath = len(pckg['remainingPath'])
+		#END FOR
+		logger.trace("Best matches will have a remaining path of {!s} elements".format(minRemainingPath))
+		if minRemainingPath == -1:
+			raise CustomExceptions.EndpointException(
+				"Unable to determine Script Packages with shortest remaining path."
+			)
+		#Now we see how many packages had that smallest remaining path
+		packagesWithShortestRemaining = []
+		for pckg in foundPackages:
+			if len(pckg['remainingPath']) == minRemainingPath:
+				packagesWithShortestRemaining.append(pckg)
+		#END FOR
+		logger.debug(
+			"Filtered found Packages to {!s} elements (see log details)".format(
+				len(packagesWithShortestRemaining)
+			),
+			packagesWithShortestRemaining
+		)
+		if len(packagesWithShortestRemaining) == 1:
+			return packagesWithShortestRemaining[-1]
+		
+		#If we got to here, it means that we have multiple Script Packages that matched. We are going to first
+		# see if we have a Script Package that matches exactly. If not, then we see if an endpoint has an
+		# integer variable. And finally, if all else fails, we select the endpoint with a string variable.
+		#If during any of these tests we find multiple matching, we raise an Exception.
+		logger.trace("Sorting packages to those that had the final part of that path as a variable and those that didn't.")
+		packagesWithVariable = []
+		packagesWithoutVariable = []
+		for pckg in packagesWithShortestRemaining:
+			lastPart = pckg['fullName'].split('.')[-1]
+			if swagStc.IGNITION_SWAGGER_CUSTOM_PREFIX in lastPart:
+				packagesWithVariable.append(pckg)
+			else:
+				packagesWithoutVariable.append(pckg)
+		#END FOR
+		
+		if len(packagesWithoutVariable) > 0:
+			logger.trace(
+				"There were {!s} packages with a final path part as a static value.".format(len(packagesWithoutVariable))
+			)
+			if len(packagesWithoutVariable) > 1:
+				raise CustomExceptions.EndpointException(
+					"Found multiple Packages with a static path end. Cannot chose which one to use."
+				)
+			return packagesWithoutVariable[-1]
+		#END IF
+		if len(packagesWithVariable) == 0:
+			raise CustomExceptions.EndpointException(
+				"Somehow we have no packages with or without a variable."
+			)
+		#END IF
+		logger.trace("No packages with a static final path part. Choosing best with variable...")
+		variableTypeSearchOrder = ['integer','string']
+		for vt in variableTypeSearchOrder:
+			packagesWithMatchingVariableType = []
+			for pckg in packagesWithVariable:
+				if vt in pckg['fullName'].split('.')[-1]:
+					packagesWithMatchingVariableType.append(pckg)
+			#END FOR
+			if len(packagesWithMatchingVariableType) == 0:
+				continue
+			elif len(packagesWithMatchingVariableType) == 1:
+				return packagesWithMatchingVariableType[-1]
+			else:
+				raise CustomExceptions.EndpointException(
+					"Found multiple Packages with a variable path end of type '{!s}'.".format(vt) +
+					"Cannot chose which one to use."
+				)
+		#END FOR
+		return None
+	#END IF/ELIF/ELSE
+	raise CustomExceptions.EndpointException(
+		"Did not find any package to return. This should not have happened."
+	)
 #END DEF
 
 def processRequest(request, session):
@@ -2257,7 +2350,7 @@ def processRequest(request, session):
 	#Attempting to find the project script that defines the endpoint the request came to.
 	logger.trace("Will try finding a Script Module at path {!r}".format(wdr.swag['resource-path']))
 	try:
-		foundPackages = findScriptResourcesFromPath(wdr.swag['resource-path'], swagStc)
+		foundPackage = findBestScriptResourceFromPath(wdr.swag['resource-path'], swagStc)
 	except (Exception, java.lang.Exception), e:
 		etype, evalue, tb = sys.exc_info() if isinstance(e, Exception) else (type(e), e, None)
 		logger.error(
@@ -2269,38 +2362,25 @@ def processRequest(request, session):
 		wdr.logOutgoingData(response)
 		return response
 	#END TRY/EXCEPT
-	if len(foundPackages) == 0:
+	if foundPackage is None:
 		response = swagRsp.httpStatus(wdr.request, "Not Found")
 		wdr.logOutgoingData(response)
 		return response
-	elif len(foundPackages) > 1:
-		logger.trace(
-			"Found multiple Script Modules. Will be using the deepest one. (see details for all matches)",
-			foundPackages
-		)
-		# # # # # # # #
-		# TODO:
-		# Use best match. If exact match, use.
-		# else, use variable
-		# # # # # # # #
-	#END IF/ELIF
-	#The function could have found more that 1 Script Module that matched the path followed. We are going
-	# to default to using the "deepest" one, as that is the one that had the most URL parts that matched.
-	usingModule = foundPackages[-1]
+	#END IF
 	#Adding the "remaining path" to the WebDevRequest object. This needs to be done here because the WebDevRequest
 	# object does not know what the actual base URI is when initializing. We have to wait until we can call
-	# `findScriptResourcesFromPath` to determine what is actually left over
-	wdr.swag['remainingPath'] = usingModule['remainingPath']
+	# `findBestScriptResourceFromPath` to determine what is actually left over
+	wdr.swag['remainingPath'] = foundPackage['remainingPath']
 	#Also adding the Path Parameters found.
-	wdr.swag['pathParams'] = usingModule['pathParams']
+	wdr.swag['pathParams'] = foundPackage['pathParams']
 	
 	#After finding the necessary project script, we intialize an "Endpoint" instance with the WebDevRequest instance,
 	# which will allow us to execute all of the validation and authentication, and then we return the response
 	try:
 		endpointObj = Endpoint(
 			wdr,
-			usingModule['fullName'],
-			usingModule['scriptModule'],
+			foundPackage['fullName'],
+			foundPackage['scriptModule'],
 			swagStc, swagDf,
 			logger
 		)
