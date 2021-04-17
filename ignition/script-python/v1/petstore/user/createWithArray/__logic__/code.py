@@ -42,6 +42,7 @@ class POST(swagRq.HttpMethod):
 		],
 		'responses': {
 			#
+			'default': swagStc.GENERIC_FAILURE_RESPONSE,
 		}
 	}
 	
