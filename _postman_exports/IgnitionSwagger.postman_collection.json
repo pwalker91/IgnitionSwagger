@@ -1,0 +1,1104 @@
+{
+	"info": {
+		"_postman_id": "4263a7f9-bbba-49c9-9580-a7a4d5df0cf8",
+		"name": "IgnitionSwagger",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "v1",
+			"item": [
+				{
+					"name": "petstore",
+					"item": [
+						{
+							"name": "pet",
+							"item": [
+								{
+									"name": "pet",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"photoUrls\": [\"url1\"],\n    \"tags\": [\n        {\"name\": \"string\", \"id\": 1}\n    ],\n    \"name\": \"doggie\",\n    \"id\": 1,\n    \"category\": {\"name\": \"string\", \"id\": 1},\n    \"status\": \"available\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet (fail 405)",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"photoUrls\": [\"url1\"],\n    \"tags\": [\n        {\"name\": \"string\", \"id\": 1}\n    ],\n    \"name\": \"baddoggie\",\n    \"id\": -1,\n    \"category\": {\"name\": \"string\", \"id\": 1},\n    \"status\": \"available\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet",
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"photoUrls\": [\"url1\"],\n    \"tags\": [\n        {\"name\": \"string\", \"id\": 1}\n    ],\n    \"name\": \"baddoggie\",\n    \"id\": 101,\n    \"category\": {\"name\": \"string\", \"id\": 1},\n    \"status\": \"available\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet (fail 400)",
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"photoUrls\": [\"url1\"],\n    \"tags\": [\n        {\"name\": \"string\", \"id\": 1}\n    ],\n    \"name\": \"baddoggie\",\n    \"id\": -1,\n    \"category\": {\"name\": \"string\", \"id\": 1},\n    \"status\": \"available\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet (fail 404)",
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"photoUrls\": [\"url1\"],\n    \"tags\": [\n        {\"name\": \"string\", \"id\": 1}\n    ],\n    \"name\": \"baddoggie\",\n    \"id\": 1,\n    \"category\": {\"name\": \"string\", \"id\": 1},\n    \"status\": \"available\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet (fail 405)",
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"photoUrls\": [\"url1\"],\n    \"tags\": [\n        {\"name\": \"string\", \"id\": 1}\n    ],\n    \"name\": \"baddoggie\",\n    \"id\": 2,\n    \"category\": {\"name\": \"string\", \"id\": 1},\n    \"status\": \"available\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/findByStatus",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/findByStatus?status=available",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"findByStatus"
+											],
+											"query": [
+												{
+													"key": "status",
+													"value": "available"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/findByStatus (fail - bad value)",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/findByStatus?status=bad",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"findByStatus"
+											],
+											"query": [
+												{
+													"key": "status",
+													"value": "bad"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/findByTags",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/findByTags?tags=tag1,tag2",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"findByTags"
+											],
+											"query": [
+												{
+													"key": "tags",
+													"value": "tag1,tag2"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/findByTags (fail 400)",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/findByTags?tags=invalid1",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"findByTags"
+											],
+											"query": [
+												{
+													"key": "tags",
+													"value": "invalid1"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/{petId}",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/12345",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"12345"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/{petId} (fail 400)",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/-5",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"-5"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/{petId} (fail 404)",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/1",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/{petId}",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "urlencoded",
+											"urlencoded": [
+												{
+													"key": "name",
+													"value": "Earl Ruffington III",
+													"type": "text"
+												},
+												{
+													"key": "status",
+													"value": "available",
+													"type": "text"
+												}
+											]
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/12345",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"12345"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/{petId}",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "urlencoded",
+											"urlencoded": [
+												{
+													"key": "name",
+													"value": "Earl Ruffington III",
+													"type": "text"
+												},
+												{
+													"key": "status",
+													"value": "available",
+													"type": "text"
+												}
+											]
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/12345",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"12345"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/{petId} (fail 400)",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "urlencoded",
+											"urlencoded": [
+												{
+													"key": "name",
+													"value": "Earl Ruffington III",
+													"type": "text"
+												},
+												{
+													"key": "status",
+													"value": "available",
+													"type": "text"
+												}
+											]
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/-2",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"-2"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/{petId} (fail 405)",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "urlencoded",
+											"urlencoded": [
+												{
+													"key": "name",
+													"value": "Earl Ruffington III",
+													"type": "text"
+												},
+												{
+													"key": "status",
+													"value": "available",
+													"type": "text"
+												}
+											]
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/3",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"3"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "pet/{petId}/uploadImage",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "formdata",
+											"formdata": [
+												{
+													"key": "additionalMetadata",
+													"value": "nameOfMyFile",
+													"type": "text"
+												},
+												{
+													"key": "file",
+													"type": "file",
+													"src": []
+												}
+											]
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/pet/3/uploadImage",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"pet",
+												"3",
+												"uploadImage"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "store",
+							"item": []
+						},
+						{
+							"name": "user",
+							"item": [
+								{
+									"name": "user",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "user/logout",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user/logout",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user",
+												"logout"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "user/login",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user/login?username=me&password=mypassword",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user",
+												"login"
+											],
+											"query": [
+												{
+													"key": "username",
+													"value": "me"
+												},
+												{
+													"key": "password",
+													"value": "mypassword"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "user/login (fail 400)",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user/login?username=iamuser&password=mypassword",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user",
+												"login"
+											],
+											"query": [
+												{
+													"key": "username",
+													"value": "iamuser"
+												},
+												{
+													"key": "password",
+													"value": "mypassword"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "user/{username}",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user/user1",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user",
+												"user1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "user/{username} (fail 400)",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user/badthing",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user",
+												"badthing"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "user/{username} (fail 404)",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user/user42",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user",
+												"user42"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "user/{username}",
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"id\": 1,\n    \"username\": \"user1\",\n    \"firstName\": \"I am\",\n    \"lastName\": \"Groot\",\n    \"email\": \"iamgroot@yggdrasil.com\",\n    \"password\": \"1amGROOT!\",\n    \"phone\": \"+1 555-123-4567\",\n    \"userStatus\": 1\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user/user1",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user",
+												"user1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "user/{username}",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user/user1",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user",
+												"user1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "user/{username} (fail 400)",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user/badthing",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user",
+												"badthing"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "user/{username} (fail 404)",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/petstore/user/user42",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"petstore",
+												"user",
+												"user42"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "tests",
+					"item": [
+						{
+							"name": "Authentication Examples",
+							"item": [
+								{
+									"name": "auth-alwaysfail",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"description": "wrong key",
+												"key": "API-KEY",
+												"type": "text",
+												"value": "abcd1222"
+											},
+											{
+												"description": "correct key",
+												"key": "API-KEY",
+												"type": "text",
+												"value": "abcd1234",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/tests/auth-alwaysfail",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"tests",
+												"auth-alwaysfail"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "auth-simple",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"description": "wrong key",
+												"key": "IS-API-Key",
+												"type": "text",
+												"value": "abcd1222",
+												"disabled": true
+											},
+											{
+												"description": "correct key",
+												"key": "IS-API-Key",
+												"type": "text",
+												"value": "abcd1234"
+											}
+										],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/tests/auth-simple",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"tests",
+												"auth-simple"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "auth-simple",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"description": "wrong key",
+												"key": "IS-API-Key",
+												"type": "text",
+												"value": "abcd1222",
+												"disabled": true
+											},
+											{
+												"description": "correct key",
+												"key": "IS-API-Key",
+												"type": "text",
+												"value": "qwerty123456"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/tests/auth-simple",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"tests",
+												"auth-simple"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Parameter Validation Examples",
+							"item": [
+								{
+									"name": "validation",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/tests/validation.json?arg1=5&arg2=helo&arg3=7,8,9,10",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"tests",
+												"validation.json"
+											],
+											"query": [
+												{
+													"key": "arg1",
+													"value": "5"
+												},
+												{
+													"key": "arg2",
+													"value": "helo"
+												},
+												{
+													"key": "arg3",
+													"value": "7,8,9,10"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "validation",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"arg_string\": \"a string\",\n    \"arg_boolean\": false,\n    \"arg_int\": 43,\n    \"arg_float\": 9000.3,\n    \"arg_date\": \"2020-01-03T07:43:22 -08:00\",\n    \"arg_array\": [1,2,3,4],\n    \"arg_date2\": \"2020-10-10\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/tests/validation",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"tests",
+												"validation"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "validation/{paramName}",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/tests/validation/4",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"tests",
+												"validation",
+												"4"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "validation/{paramName}/{otherParam}",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/tests/validation/4/asdf",
+											"host": [
+												"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+											],
+											"path": [
+												"v1",
+												"tests",
+												"validation",
+												"4",
+												"asdf"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "docs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/docs.html",
+							"host": [
+								"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+							],
+							"path": [
+								"v1",
+								"docs.html"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "docs (bad)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/docs.xml",
+							"host": [
+								"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+							],
+							"path": [
+								"v1",
+								"docs.xml"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "swagger.json",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASEURL}}{{PORT}}{{PROJECTPATH}}/v1/swagger.json",
+							"host": [
+								"{{BASEURL}}{{PORT}}{{PROJECTPATH}}"
+							],
+							"path": [
+								"v1",
+								"swagger.json"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

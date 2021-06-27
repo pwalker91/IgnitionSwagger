@@ -54,7 +54,7 @@ These properties can be updated directly in the file or by using the Gateway Bro
 # Postman Requests for Testing
 [Postman](https://www.postman.com/) is a fantastic tool for API development and testing.
 
-Use the Postman Exports found in `___` to easily test this project on a locally installed version of Ignition.
+Use the Postman Exports found in [`_postman_exports`](_postman_exports) folder to easily test this project on a locally installed version of Ignition.
 
 To adjust the Postman Request resources to work with an externally-hosted Ignition Gateway that has this project installed, simply edit the Environment Variable `URL` to be the base of your Ignition Gateway's API service.
 
